@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  birthday: 2026-02-07
+  mbti: MyString
+  birthplace: MyString
+  member_color: MyString
+  group_name: MyString
+  x_account: MyString
+
+two:
+  name: MyString
+  birthday: 2026-02-07
+  mbti: MyString
+  birthplace: MyString
+  member_color: MyString
+  group_name: MyString
+  x_account: MyString
