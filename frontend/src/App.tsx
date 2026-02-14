@@ -16,8 +16,8 @@ function App() {
   useEffect(() => {
     // rails apiからデータを取得する
     fetch("http://localhost:3000/artists")
-    .then(res => res.json())
-    .then(data => setArtists(data))
+      .then(res => res.json())
+      .then(data => setArtists(data))
   }, [])
 
   // 送信ボタンが押された時の処理
@@ -41,30 +41,30 @@ function App() {
       },
       body: JSON.stringify(artistData)
     })
-    .then(res => {
-      if (res.ok) {
-        // 成功した場合
-        // 入力欄のリセット
-        setName("");
-        setGroup_name("");
-        setMember_color("");
-        console.log("登録成功");
-        // 中身を解析
-        return res.json()
-        // リスト更新
-        .then(data => {
-          setArtists([...artists, data]);
-        })
-      } else {
-        // 失敗した場合
-        console.log("登録失敗");
-      }
-    })
+      .then(res => {
+        if (res.ok) {
+          // 成功した場合
+          // 入力欄のリセット
+          setName("");
+          setGroup_name("");
+          setMember_color("");
+          console.log("登録成功");
+          // 中身を解析
+          return res.json()
+            // リスト更新
+            .then(data => {
+              setArtists([...artists, data]);
+            })
+        } else {
+          // 失敗した場合
+          console.log("登録失敗");
+        }
+      })
   }
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>推しメン一覧aa</h1>
+      <h1>推しメン一覧 test</h1>
 
       <form onSubmit={handleSubmit}>
         {/* アーティスト名の入力欄 */}
