@@ -4,14 +4,14 @@
 
 ## 🚀 環境構築 (Setup)
 
-### 1. リポジトリのクローン
+### 1. リポジトリのクローン（初回のみ）
 
 ```bash
 git clone https://github.com/11kazu13/oshime.git
 cd oshime
 ```
 
-### 2. Dockerの起動
+### 2. Dockerの起動（初回は事前にdocker desktopをダウンロードする必要があります）
 
 初回はビルドが走るため時間がかかります。
 
@@ -27,12 +27,12 @@ docker compose up --build
 docker compose exec api bin/rails db:create db:migrate
 ```
 
-アクセス:
+サイトへのアクセス:
 
 - Frontend: <http://localhost:5173>
 - Backend API: <http://localhost:3000>
 
-## 🛠 よく使うコマンド
+## 🛠 よく使うコマンド（CLIで操作する時は必須！）
 
 - **Railsコンソール**: `docker compose exec api bin/rails c`
 - **バックエンドに入る**: `docker compose exec api bash`
