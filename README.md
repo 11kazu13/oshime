@@ -1,185 +1,28 @@
-# 📘 Project OSHI-ME (仮) マスター開発仕様書 v1.0
+# 一旦作りたいもの一覧
 
-## 1. プロジェクト概要
-**Vision**: 推し活・エンタメ領域における「信頼できるWiki」×「熱量のあるレビュー」を統合したUGM（User Generated Media）プラットフォーム。
-**Core Value**: 
-1. ファンが作り上げる正確で詳細なデータベース（Wiki）。
-2. 1日1回の投票による、信頼性の高い「推し」評価エコシステム。
+匿名でスモールスタート
 
----
+【Wiki機能】
+- アーティストの登録
+- アーティスト一覧の表示
+- アーティスト詳細表示
+- 検索とsort
 
-## 2. システムアーキテクチャ & 技術スタック
+[詳細情報]<br>
+- 基本情報
+- bio
+- 所属グループ履歴
 
-フロントエンドとバックエンドを疎結合にする **Headless構成** を採用。
-
-### 🛠 Tech Stack
-| 領域 | 技術選定 | 補足 |
-| :--- | :--- | :--- |
-| **Frontend** | **Next.js (React / TypeScript)** | SSR/SPAハイブリッド。Vercel等へのデプロイを想定。 |
-| **Backend** | **Ruby on Rails (API Mode)** | JSONを返却するRESTful APIサーバー。 |
-| **Database** | **MySQL (Amazon RDS)** | リレーショナルデータ管理。 |
-| **Infra** | **AWS (EC2/ECS + S3)** | 画像はS3、APIはEC2/ECSへ。 |
-| **Auth** | **Rails + JWT** (予定) | 認証トークンを用いたセッション管理。 |
-| **Design** | **Figma** | 画面設計・プロトタイプの作成。 |
+[その他操作]
+- Wiki編集のリクエスト
+- 編集履歴の保存
+- 編集承認フロー
+- 管理者が提案を確認し、「承認」または「却下」する機能。
+- 承認された内容のみが本番ページに反映される仕組み。
 
 ---
 
-## 3. データベース設計 (Schema Definition)
-
-### 3-1. Users (サポーター)
-ユーザー認証とプロファイル管理。
-- **id**: integer (PK)
-- **nickname**: string (表示名 / 必須)
-- **x_username**: string (X ID / 任意)
-- **email**: string (ログイン用 / unique)
-- **password_digest**: string (ハッシュ化パスワード)
-- **created_at**: datetime
-
-### 3-2. Core Content (Wiki本体)
-#### Artists (アーティスト)
-- **id**: integer (PK)
-- **name**: string (名前 / 必須)
-- **bio**: text (経歴・エピソード)
-- **mbti**: string (例: ENFP / 任意)
-- **member_color**: string (メンバーカラー / 任意)
-- **birth_date**: date (生年月日 / 任意)
-- **birthplace**: string (出身地 / 任意)
-- **created_at**: datetime
-
-#### Groups (グループ)
-- **id**: integer (PK)
-- **name**: string (グループ名 / 必須)
-- **created_at**: datetime
-
-#### Memberships (所属 / 中間テーブル)
-- **id**: integer (PK)
-- **artist_id**: integer (FK)
-- **group_id**: integer (FK)
-- **joined_at**: date (加入日)
-- **left_at**: date (脱退日 / NULL=現役)
-- **role**: string (役割: リーダー、センターなど)
-
-### 3-3. Engagement (推し活・評価)
-#### Reviews (投票・レビュー)
-**制約**: 同一ユーザー・同一アーティストへの投稿は「1日1回」まで。
-- **id**: integer (PK)
-- **user_id**: integer (FK)
-- **artist_id**: integer (FK)
-- **rating**: integer (1〜7の7段階評価 / 必須)
-- **comment**: text (感想 / 任意)
-- **created_at**: datetime
-
-#### Favorites (推し設定)
-**制約**: `is_primary: true` は1ユーザーにつき1レコードのみ。
-- **id**: integer (PK)
-- **user_id**: integer (FK)
-- **artist_id**: integer (FK)
-- **is_primary**: boolean (神推しフラグ)
-- **since**: date (推し始めた日)
-
-### 3-4. Wiki Moderation (編集・承認)
-情報の質を担保する承認フロー用。
-#### Artist_Revisions (編集履歴)
-- **id**: integer (PK)
-- **artist_id**: integer (FK)
-- **user_id**: integer (FK / 編集者)
-- **content**: json/text (変更後のデータペイロード)
-- **status**: string ('pending', 'approved', 'rejected')
-- **ai_score**: float (AIによる安全性スコア)
-- **ai_check_log**: text (AIの判定コメント)
-- **moderator_id**: integer (承認者ID)
-- **created_at**: datetime
-
----
-
-## 4. APIインターフェース規約 (FE ⇔ BE Contract)
-
-### 4-1. 通信フォーマット
-* **Request**: JSON (`snake_case` 推奨)
-* **Response**: JSON (`snake_case` で返却し、FE側でCamelCaseへ変換して扱うことを推奨)
-
-### 4-2. レスポンス設計標準
-**成功時 (200 OK)**
-```json
-{
-  "data": {
-    "id": 1,
-    "name": "Artist Name",
-    "attributes": { ... }
-  }
-}
-
-```
-
-**エラー時 (4xx, 5xx)**
-
-```json
-{
-  "error": {
-    "code": "ALREADY_VOTED_TODAY",
-    "message": "本日の投票は完了しています。",
-    "details": "Next vote available at 2026-02-12 00:00:00"
-  }
-}
-
-```
-
----
-
-## 5. ビジネスロジック仕様
-
-### 5-1. レビュー投稿（投票）制限
-
-* **仕様**: ユーザーは同一アーティストに対して、**1日（0:00〜23:59 JST）に1回のみ**投票可能。
-* **BE実装**: `Reviews` 作成時、`created_at` が `Date.today` の範囲にある既存レコードをチェックする。存在する場合は `422 Unprocessable Entity` を返す。
-
-### 5-2. Wiki編集承認フロー
-
-1. **FE**: 編集内容を POST `/api/artists/:id/revisions` へ送信。
-2. **BE**: `artist_revisions` に `status: 'pending'` で保存。
-3. **Admin/Mod**: 管理画面等で内容を確認し承認アクションを実行。
-4. **BE**: `status` を `approved` に更新し、`artists` テーブルの本データを上書き更新（Update）。
-* 将来的にはAIチェックを挟む。
-
-
-
-### 5-3. 神推し (Kami-oshi) 設定
-
-* **仕様**: プロフィールで「神推し (is_primary)」に設定できるのは1人のみ。
-* **BE実装**: `favorites` 作成/更新時に `is_primary: true` がリクエストされた場合、トランザクション内で「このユーザーの既存の `is_primary` をすべて `false` にリセット」してから、対象を `true` に設定する。
-
----
-
-## 6. 開発ワークフロー & ルール
-
-### 6-1. Git / GitHub Flow
-
-基本方針: `main` ブランチは常にデプロイ可能な状態を保つ。
-
-1. **Issues**: GitHub Issues でタスクを起票。「FE」「BE」「Design」ラベルを使用。
-2. **Branch**: `feature/issues番号-機能名` (例: `feature/12-add-review-api`)
-3. **Pull Request (PR)**:
-* テンプレートを使用し「変更内容」「動作確認方法」を記載。
-* **相互レビュー**: BEのコードはFE担当が、FEのコードはBE担当が確認し、仕様認識のズレを防ぐ。
-
-
-
-### 6-2. コミュニケーション
-
-* **GitHub Comments**: コード単位の議論はPR上で行う。
-* **GitHub Projects**: カンバン形式で進捗管理。「Todo」「In Progress」「Review」「Done」。
-
-### 6-3. デザインフロー
-
-1. **Figma**: 画面UIを作成。
-2. **Review**: エンジニア2名ですり合わせ（実装可能性の確認）。
-3. **Code**: 合意後にコーディング開始。
-
----
-
-## 7. Next Actions (Week 1)
-
-1. **Repo**: GitHubリポジトリ作成。
-2. **Design**: Figmaで「アーティスト詳細」「レビュー投稿」のUI作成。
-3. **BE**: Railsプロジェクト作成、Migration実行。
-4. **FE**: Next.jsプロジェクト作成、共通コンポーネント基盤作成。
+【レビュー機能】
+- 1日1回の投票（レビュー投稿）
+- 7段階評価（1〜7）の星付け
+- コメント投稿
