@@ -7,7 +7,7 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/11kazu13/oshime.git
 cd oshime
 ```
 
