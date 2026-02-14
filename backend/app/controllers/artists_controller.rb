@@ -3,9 +3,15 @@ class ArtistsController < ApplicationController
 
   # GET /artists
   def index
-    @artists = Artist.all
+    q = params[:q].to_s.strip
+    artists = Artist.all
 
-    render json: @artists
+    if q.present?
+      like = "%#{ActiveRecord::Base.sanitize_sql_like(q)}%"
+    artists = artists.where("name LIKE :q OR group_name LIKE :q", q: like)
+  end
+
+  render json: artists
   end
 
   # GET /artists/1

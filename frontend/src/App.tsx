@@ -1,88 +1,94 @@
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Artist {
   id: number;
   name: string;
+  group_name?: string;
 }
 
 function App() {
-  // メモ用紙たち（useState）
   const [artists, setArtists] = useState<Artist[]>([]);
   const [name, setName] = useState('');
   const [group_name, setGroup_name] = useState('');
   const [member_color, setMember_color] = useState('');
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    // rails apiからデータを取得する
-    fetch('http://localhost:3000/artists')
+  // 一覧取得（q があれば検索、なければ全件）
+  const fetchArtists = (q = '') => {
+    const url = q
+      ? `http://localhost:3000/artists?q=${encodeURIComponent(q)}`
+      : 'http://localhost:3000/artis
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => setArtists(data));
+  };
+
+  // 初回表示時
+  useEffect(() => {
+    fetchArtists();
   }, []);
 
-  // 送信ボタンが押された時の処理
+  // 登録
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 送信するデータをオブジェクトで作る
     const artistData = {
-      artist: {
-        name: name,
-        group_name: group_name,
-        member_color: member_color,
-      },
+      artist: { name, group_name, member_color },
     };
 
-    // fetchでrailsに送る
     fetch('http://localhost:3000/artists', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(artistData),
     }).then((res) => {
       if (res.ok) {
-        // 成功した場合
-        // 入力欄のリセット
         setName('');
         setGroup_name('');
         setMember_color('');
-        console.log('登録成功');
-        // 中身を解析
-        return (
-          res
-            .json()
-            // リスト更新
-            .then((data) => {
-              setArtists([...artists, data]);
-            })
-        );
+        // 登録後は現在の検索条件で再取得
+        fetchArtists(search);
       } else {
-        // 失敗した場合
         console.log('登録失敗');
       }
     });
+  };
+
+  // 検索
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchArtists(search.trim());
   };
 
   return (
     <div style={{ padding: '20px' }}>
       <h1>推しメン一覧</h1>
 
+      {/* 検索フォーム */}
+      <form onSubmit={handleSearch} style={{ marginBottom: '12px' }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="名前 / グループ名で検索"
+          type="text"
+        />
+        <button type="submit">検索</button>
+      </form>
+
+      {/* 登録フォーム */}
       <form onSubmit={handleSubmit}>
-        {/* アーティスト名の入力欄 */}
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="名前を入力してください"
           type="text"
         />
-        {/* グループ名の入力欄 */}
         <input
           value={group_name}
           onChange={(e) => setGroup_name(e.target.value)}
           placeholder="グループ名を入力してください"
           type="text"
         />
-        {/* メンバーカラーの入力欄 */}
         <input
           value={member_color}
           onChange={(e) => setMember_color(e.target.value)}
@@ -93,11 +99,14 @@ function App() {
       </form>
 
       {artists.length === 0 ? (
-        <p>データがまだありません。railsコンソールで登録してみてね！</p>
+        <p>該当するデータがありません</p>
       ) : (
         <ul>
           {artists.map((artist) => (
-            <li key={artist.id}>{artist.name}</li>
+            <li key={artist.id}>
+              {artist.name}
+              {artist.group_name ? `（${artist.group_name}）` : ''}
+            </li>
           ))}
         </ul>
       )}
