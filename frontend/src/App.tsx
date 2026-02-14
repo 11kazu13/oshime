@@ -64,7 +64,7 @@ function App() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>推しメン一覧</h1>
+      <h1>推しメン一覧aa</h1>
 
       <form onSubmit={handleSubmit}>
         {/* アーティスト名の入力欄 */}
