@@ -1,11 +1,13 @@
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import ArtistDetail from './ArtistDetail';
 
 interface Artist {
   id: number;
   name: string;
 }
 
-function App() {
+function ArtistList() {
   // メモ用紙たち（useState）
   const [artists, setArtists] = useState<Artist[]>([]);
   const [name, setName] = useState('');
@@ -97,11 +99,24 @@ function App() {
       ) : (
         <ul>
           {artists.map((artist) => (
-            <li key={artist.id}>{artist.name}</li>
+            <li key={artist.id}>
+              <Link to={`/artists/${artist.id}`}>{artist.name}</Link>
+            </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<ArtistList />} />
+        <Route path="/artists/:id" element={<ArtistDetail />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
