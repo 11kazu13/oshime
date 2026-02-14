@@ -17,7 +17,7 @@ function App() {
   const fetchArtists = (q = '') => {
     const url = q
       ? `http://localhost:3000/artists?q=${encodeURIComponent(q)}`
-      : 'http://localhost:3000/artis
+      : 'http://localhost:3000/artists';
 
     fetch(url)
       .then((res) => res.json())
