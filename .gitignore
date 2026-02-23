@@ -76,3 +76,6 @@ docker-compose.override.yml
 .envrc
 .tool-versions
 *.orig
+
+# すべての .keep ファイルは無視しない（Git管理対象にする）
+!**/.keep
