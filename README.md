@@ -32,6 +32,18 @@ docker compose exec api bin/rails db:create db:migrate
 - Frontend: <http://localhost:5173>
 - Backend API: <http://localhost:3000>
 
+## 🧱 技術スタック
+
+### フロントエンド
+
+- React + TypeScript
+- Vite
+
+### バックエンド
+
+- Ruby on Rails (API)
+- PostgreSQL
+
 ## 🛠 よく使うコマンド（CLIで操作する時は必須！）
 
 - **Railsコンソール**: `docker compose exec api bin/rails c`
