@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_07_125945) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_23_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "artist_comments", force: :cascade do |t|
+    t.bigint "artist_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.integer "rating", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artist_id"], name: "index_artist_comments_on_artist_id"
+  end
 
   create_table "artists", force: :cascade do |t|
     t.date "birthday"
@@ -25,4 +34,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_07_125945) do
     t.datetime "updated_at", null: false
     t.string "x_account"
   end
+
+  add_foreign_key "artist_comments", "artists"
 end
