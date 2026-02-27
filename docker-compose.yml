@@ -1,40 +1,16 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    container_name: oshime_local_db
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_DB: oshime_development
     ports:
       - "5432:5432"
-
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    command: bin/rails server -b 0.0.0.0
     volumes:
-      - ./backend:/rails
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/oshime_development
-    depends_on:
-      - db
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: http://localhost:3000
-      CHOKIDAR_USEPOLLING: "true"
+      - db-data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  db-data:
