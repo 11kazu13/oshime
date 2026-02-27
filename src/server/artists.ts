@@ -8,29 +8,47 @@ import { z } from 'zod'
 const isNonProd =
   process.env.VERCEL_ENV !== 'production' || process.env.NODE_ENV !== 'production'
 
+function stringifyErrorField(value: unknown) {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') return String(value)
+  return undefined
+}
+
+function extractDbError(error: unknown) {
+  const top = (error ?? {}) as Record<string, unknown>
+  const cause = (top.cause ?? {}) as Record<string, unknown>
+
+  const topMessage = stringifyErrorField(top.message)
+  const causeMessage = stringifyErrorField(cause.message)
+  const sanitizedTopMessage =
+    topMessage && !topMessage.startsWith('Failed query:') ? topMessage : undefined
+
+  return {
+    message: causeMessage ?? sanitizedTopMessage,
+    code: stringifyErrorField(cause.code) ?? stringifyErrorField(top.code),
+    detail: stringifyErrorField(cause.detail) ?? stringifyErrorField(top.detail),
+    hint: stringifyErrorField(cause.hint) ?? stringifyErrorField(top.hint),
+  }
+}
+
 function logDbError(context: string, error: unknown) {
   if (!isNonProd) return
-  const err = error as {
-    message?: string
-    code?: string
-    detail?: string
-    hint?: string
-  }
+  const err = extractDbError(error)
   console.error(`[db] ${context} failed`, {
-    message: err?.message,
-    code: err?.code,
-    detail: err?.detail,
-    hint: err?.hint,
+    message: err.message,
+    code: err.code,
+    detail: err.detail,
+    hint: err.hint,
   })
 }
 
 function toClientDbError(error: unknown) {
-  const err = error as { message?: string; code?: string }
-  const errorCode = err?.code
+  const err = extractDbError(error)
+  const errorCode = err.code
   if (!isNonProd) {
     return new Error(errorCode ? `Database query failed (${errorCode})` : 'Database query failed')
   }
-  const detail = [err?.code, err?.message].filter(Boolean).join(': ')
+  const detail = [err.code, err.message, err.detail, err.hint].filter(Boolean).join(' | ')
   return new Error(detail ? `Database query failed (${detail})` : 'Database query failed')
 }
 
