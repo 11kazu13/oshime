@@ -6,7 +6,7 @@ import { createArtistSchema, updateArtistSchema, createArtistCommentSchema } fro
 import { z } from 'zod'
 
 const isNonProd =
-  process.env.VERCEL_ENV !== 'production' && process.env.NODE_ENV !== 'production'
+  process.env.VERCEL_ENV !== 'production' || process.env.NODE_ENV !== 'production'
 
 function logDbError(context: string, error: unknown) {
   if (!isNonProd) return
@@ -25,10 +25,11 @@ function logDbError(context: string, error: unknown) {
 }
 
 function toClientDbError(error: unknown) {
-  if (!isNonProd) {
-    return new Error('Database query failed')
-  }
   const err = error as { message?: string; code?: string }
+  const errorCode = err?.code
+  if (!isNonProd) {
+    return new Error(errorCode ? `Database query failed (${errorCode})` : 'Database query failed')
+  }
   const detail = [err?.code, err?.message].filter(Boolean).join(': ')
   return new Error(detail ? `Database query failed (${detail})` : 'Database query failed')
 }

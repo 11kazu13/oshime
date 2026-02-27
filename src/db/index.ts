@@ -4,7 +4,7 @@ import { config } from 'dotenv'
 import * as schema from './schema.ts'
 
 const isNonProd =
-  process.env.VERCEL_ENV !== 'production' && process.env.NODE_ENV !== 'production'
+  process.env.VERCEL_ENV !== 'production' || process.env.NODE_ENV !== 'production'
 
 if (isNonProd) {
   // Ensure local development consistently uses `.env.local` first.
