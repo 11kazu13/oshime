@@ -42,10 +42,11 @@ oshime/
 
 複数人チームでコンフリクトなく開発を進めるため、**Node.js (アプリケーション側)** はローカルで実行し、**PostgreSQL (データベース側)** は Docker Compose を利用して立ち上げる構成としています。
 
-### 前提条件
-- Node.js (v20以上推奨)
-- npm (v10以上)
-- Docker & Docker Compose
+### ⚠️ 注意：`.env.local` の取り扱いについて
+チーム開発やモダンなWeb開発において、**`.env.local` に絶対にクラウド（本番やステージング）の `DATABASE_URL` を直接書き込まないでください。**
+誤って手元のコマンド（`npm run db:push` など）を実行すると、本番のユーザーデータに直接影響を与えてしまう（意図せず全消去してしまう等）大きな事故に繋がります。ローカル環境では必ず **ローカルDocker用のDBアクセスURLを指定** してください。
+
+クラウドのURL（Supabaseの `Connection string` など）は、各開発者のPC上の `.env.local` ではなく、**Vercel のダッシュボードの環境変数設定** に入力して安全に管理します（後述）。
 
 ### 構築ステップ
 
@@ -62,13 +63,15 @@ oshime/
 
 3. **ローカルDB (Docker) の起動**
    バックグラウンドで PostgreSQL コンテナを立ち上げます。
+   （※Docker Desktop 等が起動していることを確認してください）
    ```bash
    docker-compose up -d
    ```
 
 4. **環境変数の設定**
-   プロジェクトルートに `.env.local` ファイルを作成し、Docker の DB 接続URLを設定します。
+   プロジェクトルートに `.env.local` ファイルを作成し、**必ず Docker のローカルDBに向けた接続URL** を設定します。
    ```env
+   # Local Development Database URL
    DATABASE_URL="postgresql://postgres:password@localhost:5432/oshime_development"
    ```
 
@@ -91,19 +94,31 @@ oshime/
 今後の開発とリリースサイクルを効率的かつ安全に回すため、以下の戦略を採用しています。
 
 ### 1. データベースの完全分離
-Supabase プロジェクトを以下の2つに分けて運用します。
+本番データ保護のため、Supabase プロジェクトを物理的に2つに分けて運用します。
 - `oshime-production` （本番環境用）
-- `oshime-staging` （チームでの開発・テスト環境用）
+- `oshime-staging` （チームでの開発・プレビューテスト環境用）
 
-Drizzle (`drizzle-kit`) を用いてインフラをコード管理しているため、安全に両環境へ同じスキーマを適用（`db:push` や `db:migrate`）できます。
+Drizzle (`drizzle-kit`) を用いてインフラをコード管理しているため、安全に両環境へ同じスキーマを適用（`db:push`）できます。
 
-### 2. ブランチ戦略と自動デプロイ
-Vercel の機能を活用し、GitHub ブランチとデプロイ環境をリンクさせます。
-- **`main` ブランチ** ➔ **Production 環境**
-  - アサインされる環境変数: `oshime-production` の DB URL
-  - リリース時の本番公開用。
-- **`develop` ブランチ** ➔ **Preview (Staging) 環境**
-  - アサインされる環境変数: `oshime-staging` の DB URL
-  - チームメンバーが Pull Request をマージする先のブランチ。Vercel により自動でプレビュー URL が発行され、ステージングDBを用いた本番同等のテストが可能です。
-- **機能ブランチ (`feature/*`)**
-  - 開発者は上記「構築ステップ」の通り Docker (ローカルDB) を活用し、他人に影響を与えずに手元でテストを行います。
+### 2. 環境変数（クラウドURL）の安全な設定
+取得したSupabaseサーバーの `Connection string` は、Vercel のダッシュボードの 「Settings > Environment Variables」 にて設定します。
+- **Key**: `DATABASE_URL`
+  - **環境（Environments）**: `Production` のみにチェック
+  - **Value**: `oshime-production` の Connection string
+- **Key**: `DATABASE_URL` （もう一つ追加）
+  - **環境（Environments）**: `Preview` と `Development` にチェック
+  - **Value**: `oshime-staging` の Connection string
+
+### 3. ブランチ戦略と自動デプロイ
+Vercel の機能を活用し、GitHub ブランチと自動デプロイをリンクさせます。
+- **`main` ブランチ** ➔ **Production 環境** （`oshime-production` のデータを参照）
+- **`develop` ブランチ** ➔ **Preview (Staging) 環境** （`oshime-staging` のデータを参照して自動デプロイ。本番直前のテスト用）
+- **機能ブランチ (`feature/*`)** ➔ **Local Docker 環境** （ローカルDBを利用して手元で開発）
+
+### 4. Supabase での RLS (Row Level Security) についてのベストプラクティス
+Supabaseダッシュボードにて「RLS Disabled in Public」というセキュリティ警告が出ることがあります。
+本プロジェクト（TanStack Start + Drizzle構成）では、ブラウザ（React）からデータベースを直接操作するのではなく、**必ずバックエンドのサーバー関数を経由してDrizzleでDBにアクセス**します。サーバーからのアクセスは管理者権限（postgresユーザー）で行われ、バリデーション（Zod）もサーバー側で担保しています。
+
+したがって、複雑なDBレベルのRLSを設定する必要はありません。
+**外部（フロントエンド等）からの意図しない直接アクセスや攻撃を完全に遮断する** という防御的プログラミングの観点から、ダッシュボード上の `artists` と `artist_comments` テーブルにおいて **「Enable RLS」ボタンを押してRLSを有効化するだけ（ポリシーは設定しない）** の運用としています。
+これにより、サーバーからの正規のアクセスは通りつつ、外部からの直接アクセスは遮断され、警告も解消されます。
