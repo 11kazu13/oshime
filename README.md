@@ -1,8 +1,7 @@
 
-# oshime (推し活コミュニティ向けUGMアプリ)
+# oshime (推し活UGM)
 
-推し活コミュニティ向けの User Generated Media (UGM) Webアプリケーションである。
-旧来の Ruby on Rails + React (SPA) 構成から、最新の **TanStack Start (フルスタック TypeScript)** アーキテクチャへ全面リプレイスした。
+推し活の User Generated Media (UGM) Webアプリケーション
 
 ## 採用技術スタック
 
