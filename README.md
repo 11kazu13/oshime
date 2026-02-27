@@ -72,7 +72,7 @@ oshime/
    プロジェクトルートに `.env.local` ファイルを作成し、**必ず Docker のローカルDBに向けた接続URL** を設定します。
    ```env
    # Local Development Database URL
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/oshime_development"
+   DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
    ```
 
 5. **データベーススキーマの反映**
