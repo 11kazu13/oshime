@@ -24,8 +24,9 @@ TypeScriptでフルスタック開発
 
 [TanStack Router](https://tanstack.com/router/latest)をベースとしたフルスタックのフレームワーク。
 
-🔻TanStack Routerについては、こちらのYoutubeがわかりやすいかも？<br>
-[TanStack Routerで型安全かつ効率的なルーティングを実現](https://youtu.be/UTzEZoEQvrc?si=Xt3Ms7Ws_4VZD1th)
+🔻概要を掴む際はAIに聞くか、こちらのYoutubeがわかりやすいかも？<br>
+[TanStack Start入門｜型安全で明示的なReactフルスタックフレームワーク徹底解説
+](https://youtu.be/OFVjBIjInP8?si=5hOFoKhJB2ECpioJ)
 
 ## ディレクトリ構成
 
