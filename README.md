@@ -20,6 +20,13 @@ TypeScriptでフルスタック開発
 - **テスト**: Vitest
 - **バリデーション**: Zod
 
+### TanStack Startとは？
+
+[TanStack Router](https://tanstack.com/router/latest)をベースとしたフルスタックのフレームワーク。
+
+🔻TanStack Routerについては、こちらのYoutubeがわかりやすいかも？<br>
+[TanStack Routerで型安全かつ効率的なルーティングを実現](https://youtu.be/UTzEZoEQvrc?si=Xt3Ms7Ws_4VZD1th)
+
 ## ディレクトリ構成
 
 モノレポを採用
