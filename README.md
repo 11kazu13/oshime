@@ -276,6 +276,40 @@ git push origin feature/login
 
 ---
 
+## ブランチの削除方法
+
+Git での「ブランチ削除」は **ローカル**と**リモート**でコマンドが違う
+
+### 1) ローカルブランチを削除
+
+マージ済みなら
+
+```bash
+git branch -d ブランチ名
+````
+
+マージしてなくても強制削除
+
+```bash
+git branch -D ブランチ名
+```
+
+### 2) リモートブランチを削除（GitHub など）
+
+```bash
+git push origin --delete ブランチ名
+```
+
+### よくある注意
+
+今いるブランチは削除できないので、先に移動：
+
+```bash
+git switch main
+```
+
+---
+
 ## PR（Pull Request）でのマージルール
 
 ### 通常リリース（feature → develop → main）
