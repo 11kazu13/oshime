@@ -1,144 +1,299 @@
-✍️ メモ
-- コード書く前に `git pull`
-- `git putsh` するときはブランチを要確認（後述）
-
-# oshime (推し活UGM)
+# oshime
 
 ## 技術スタック
 
-TypeScriptでフルスタック開発
+TypeScriptでフルスタック開発する。
 
-- **言語**: TypeScript
-- **UIライブラリ**: React 19
-- **フルスタックフレームワーク**: [TanStack Start](https://tanstack.com/start)
-- **パッケージ管理**: `npm`
-- **バンドラー**: Vite
-- **スタイリング**: Tailwind CSS
-- **データベース & 認証**: Supabase (PostgreSQL / Supabase Auth)
-- **ORM**: Drizzle ORM
-- **デプロイ**: Vercel
-- **テスト**: Vitest
-- **バリデーション**: Zod
+- 言語: TypeScript
+- UIライブラリ: React 19
+- フルスタックフレームワーク: TanStack Start
+- パッケージ管理: npm
+- バンドラー: Vite
+- スタイリング: Tailwind CSS
+- データベース / 認証: Supabase（PostgreSQL / Supabase Auth）
+- ORM: Drizzle ORM
+- テスト: Vitest
+- バリデーション: Zod
+- デプロイ: Vercel
 
-### TanStack Startとは？
+### TanStack Start とは
 
-[TanStack Router](https://tanstack.com/router/latest)をベースとしたフルスタックのフレームワーク。
+TanStack Router をベースとしたフルスタックフレームワーク。
 
-🔻概要を掴む際はAIに聞くか、こちらのYoutubeがわかりやすいかも？<br>
-[TanStack Start入門｜型安全で明示的なReactフルスタックフレームワーク徹底解説
-](https://youtu.be/OFVjBIjInP8?si=5hOFoKhJB2ECpioJ)
-
-## ディレクトリ構成
-
-モノレポを採用
-
-```text
-oshime/
-├── app.config.ts        # Vercel 向けプリセット等の全体設定
-├── vite.config.ts       # Vite & TanStack Start プラグイン設定
-├── drizzle.config.ts    # Drizzle ORM 用設定ファイル
-├── src/
-│   ├── components/      # React UI コンポーネント (Header 等)
-│   ├── routes/          # ファイルベースルーティング (ページと Loader)
-│   ├── server/          # サーバー関数 (APIエンドポイントの代わり。DB操作等)
-│   ├── db/              # DB接続設定および Drizzle スキーマ定義
-│   └── utils/           # Zod バリデーション等のユーティリティおよびテスト
-
-```
+概要を掴む際は、AIに聞くか以下の動画がわかりやすい。<br>
+https://youtu.be/OFVjBIjInP8?si=5hOFoKhJB2ECpioJ
 
 ---
 
-## チーム開発向け：ローカル環境構築ガイド
+## ディレクトリ構成
 
-複数人チームでコンフリクトなく開発を進めるため、**Node.js (アプリケーション側)** はローカルで実行し、**PostgreSQL (データベース側)** は Docker Compose を利用して立ち上げる構成としている。
+モノレポを採用する。
 
-### ⚠️ 注意：`.env.local` の取り扱いについて
+---
 
-チーム開発において、**`.env.local` にクラウド（本番やステージング）の `DATABASE_URL` を直接書き込むことは厳禁。**
-誤って手元のコマンド（`npm run db:push` など）を実行すると、本番のユーザーデータに直接影響を与え、意図せぬデータ消失などの重大な事故に繋がる。ローカル環境では必ず **ローカルDocker用のDBアクセスURLを指定** する。
+## タスク管理
 
-### 構築ステップ
+やりたい内容は基本的にタスク管理表に記載する。  
+https://github.com/users/11kazu13/projects/4/views/1
 
-1. **リポジトリのクローン**（すでにディレクトリが存在していたら不要。代わりに `git pull` する）
+タスクにはメモ程度で以下を書く。
+
+- 概要（何をするか）
+- なぜやるのか（目的）
+- どうやるのか（方針・実装イメージ）
+
+メモは短くてよいが、後で見返して分かること／他の人が見ても作業内容を把握できることを意識する。
+
+---
+
+## 開発ガイド
+
+コマンド操作はターミナルで行う（git / docker / npm などはすべてターミナル）。
+
+### 初回の構築ステップ（通常は不要）
+
+1. リポジトリをクローン（すでにある場合は不要。代わりに `git pull`）
+
 ```bash
 git clone <repository_url>
 cd oshime
-
 ```
 
+2. 依存関係をインストール
 
-2. **依存関係のインストール**
 ```bash
 npm install
-
 ```
 
+3. ローカルDB（Docker）を起動
+   ※ Docker Desktop が起動していることを確認してから実行する。
 
-3. **ローカルDB (Docker) の起動**
-バックグラウンドで PostgreSQL コンテナを立ち上げる。
-（※Docker Desktop 等が起動していることを確認すること）
 ```bash
-docker-compose up -d
-
+docker compose up -d
 ```
 
+4. 環境変数の設定
+   プロジェクトルートに `.env.local` を作成し、DockerのローカルDBに向けた接続URLを設定する。
 
-4. **環境変数の設定**
-プロジェクトルートに `.env.local` ファイルを作成し、**必ず Docker のローカルDBに向けた接続URL** を設定する。
 ```env
-# Local Development Database URL
 DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
-
 ```
 
+5. データベーススキーマを反映（ローカルDBに適用）
 
-5. **データベーススキーマの反映**
-Drizzle ORM を使ってスキーマをローカルDBに同期する。
 ```bash
 npm run db:push
-
 ```
 
+6. 開発サーバーを起動
 
-6. **開発サーバーの起動**
 ```bash
 npm run dev
-
 ```
 
-
-ブラウザで `http://localhost:3000` にアクセスできれば環境構築は成功。
+ターミナルに表示されたURLを開いて、ローカルサイトを確認する。
 
 ---
 
 ## インフラとブランチ戦略
 
-本番データの保護と安全なリリースサイクルを確立するため、データベース（Supabase）を物理的に2つに分離し、GitHubのブランチとVercelのデプロイ環境を完全に同期させている。
+本番データの保護と安全なリリースサイクルのため、DB（Supabase）を物理的に2つに分離し、GitHubブランチとVercelのデプロイ環境を同期させる。
 
-### 1. データベースの分離
+### データベースの分離
 
-* **`oshime-production`** （本番環境用DB）
-* **`oshime-staging`** （チーム開発・テスト環境用DB）
-※ Drizzle (`drizzle-kit`) を用いてインフラをコード管理しているため、両環境へ安全かつ再現性のあるスキーマ適用が可能である。
+* oshime-production（本番環境用DB）
+* oshime-staging（ステージング / チーム開発・テスト用DB）
 
-### 2. ブランチ戦略と開発フロー
+### 一時ブランチ（作業が終われば削除するブランチ）
 
-開発は以下の3層のブランチ構造で行う。
+機能追加や改修があるたびに、頻繁に追加・削除されるブランチ。<br>
+マージ後に画面から新しく作成したブランチを削除する。
 
-#### `feature/*` ブランチ (ローカル開発環境)
+| ブランチ名の接頭語 | 用途       |
+| --------- | -------- |
+| feature/  | 機能開発    |
+| hotfix/   | 緊急の不具合対応 |
 
-* **用途:** 新機能の開発やバグ修正を行う作業ブランチ。
-* **DB:** 手元の Local Docker 環境 (`localhost`) を参照する。
-* **フロー:** `develop` ブランチから派生させ、開発が完了したら `develop` に対して Pull Request (PR) を作成する。作業中、他のメンバーのDBには一切影響を与えない。
+### ブランチの役割
 
-#### `develop` ブランチ (ステージング環境 / Preview)
+#### 一時ブランチ①：feature/*（機能開発用）
 
-* **用途:** チーム内でのコード統合、およびリリース前の最終テストを行う合流地点。
-* **DB:** `oshime-staging` を参照する。
-* **フロー:** `feature/*` からの PR がマージされると、Vercel が自動でプレビューURLを発行する。このURLにアクセスすることで、本番環境に影響を与えることなく、実機（スマホ等）でのUI確認やDBロジックの結合テストが可能になる。
+* 用途: 新機能開発 / 通常の改善 / バグ修正（緊急ではないもの）
+* DB: 手元のLocal DB
+* `develop` から派生し、完了したら GitHub に push → `develop` へPRを出してマージ
+* マージ後、このブランチは削除する
 
-#### `main` ブランチ (本番環境 / Production)
+命名例（*の部分にやりたいことを書く）:
 
-* **用途:** 実際のユーザーが利用する本番公開用ブランチ。
-* **DB:** `oshime-production` を参照する。
-* **フロー:** `develop` ブランチでの検証が完全に終了したコードのみをマージする（直接のコミットは禁止）。マージされると自動で本番環境にデプロイされ、ユーザーへ機能がリリースされる。
+* `feature/login`
+* `feature/artist-register`
+
+#### 一時ブランチ②：hotfix/*（緊急バグ修正用）
+
+* 用途: 本番環境で見つかった緊急度の高い不具合対応
+* DB: 原則、本番に合わせた状態で再現・修正する
+* `main` から派生し、完了したら `main` へPRを出してマージ
+* 重要: hotfix は `main` から切るため、開発環境（`develop`）には修正が入っていない状態になる
+  → `main` マージ後に、適宜 `develop` へバックマージする
+* マージ後、このブランチは削除する
+
+命名例:
+
+* `hotfix/決済エラー`
+* `hotfix/緊急ログイン不具合`
+
+#### develop ブランチ（ステージング / Preview）
+
+* 用途: チーム内でのコード統合、リリース前テスト
+* DB: oshime-staging
+* `feature/*` がマージされると、Vercelが自動でビルド・デプロイする
+
+#### main ブランチ（本番 / Production）
+
+* 用途: 本番公開用
+* DB: oshime-production
+* `develop` で検証済みのものだけをPRでマージする（直接コミットはNG）
+* `hotfix/*` は例外的に `main` に直接マージされる（緊急対応）
+
+---
+
+## 別々に開発する場合の進め方
+
+通常の開発と同様に、各自が作業ブランチ（基本は feature/*）を作成して進める。
+
+* まず[タスク管理表](https://github.com/users/11kazu13/projects/4/views/1)に「やりたい内容」を書く
+* 例: ログイン機能を実装したい場合
+
+  * タスク: ログイン機能の実装
+  * ブランチ: `feature/login`（または `feature/ログイン機能`）
+
+---
+
+## 開発開始時のルーティン（毎回）
+
+まず `develop` を最新化する（ここが基準）。
+
+```bash
+git switch develop
+git pull
+```
+
+次に自分の作業ブランチへ移動する（例：ログイン機能の実装）
+
+```bash
+git switch feature/login
+```
+
+`develop` の最新を自分のブランチへ取り込む。
+
+```bash
+git merge develop
+```
+
+この流れで、作業ブランチは常に `develop` を土台に進められる。
+
+---
+
+## git pull の注意点
+
+`git pull` は「今チェックアウトしているブランチ」に対して動く。
+
+* ローカルで `feature/login` にいる状態で、そのブランチを push して運用している（`origin/feature/login` がある）なら、`origin/feature/login` から pull する
+* 作業ブランチがローカル専用で、リモートに存在しない場合は `git pull` しても引く先がない
+  → この場合は `develop` を最新化してから、自分のブランチへ `merge` する（上のルーティン通り）
+
+---
+
+## ローカルで動作確認する手順
+
+1. Docker Desktop を起動する
+2. ターミナルでDBを起動する
+
+```bash
+docker-compose up -d
+```
+
+3. 開発サーバーを起動する
+
+```bash
+npm run dev
+```
+
+4. 表示されたURL（例: [http://localhost:3000](http://localhost:3000) ）を開き、ローカルの変更が反映されているか確認する
+
+---
+
+## push の手順
+
+push前に「今どのブランチにいるか」を必ず確認する。
+
+```bash
+git branch
+```
+
+ブランチを移動する場合は `switch`。<br>
+例：ログイン機能開発のブランチに移動する際
+
+```bash
+git switch feature/login
+```
+
+ブランチを新しく作る場合は `checkout -b`。
+
+```bash
+git checkout -b feature/login
+```
+
+差分を確認する。
+
+```bash
+git status
+```
+
+問題なければステージする（`.` は全ファイルが対象）。
+
+```bash
+git add .
+```
+
+もう一度 `status` を確認する（赤が緑になっていればOK）。
+
+```bash
+git status
+```
+
+コミットする。
+
+```bash
+git commit -m "ログイン画面のUIを調整"
+```
+
+作業ブランチをpushする（原則 `develop` や `main` には push しない）。
+
+```bash
+git push origin feature/login
+```
+
+---
+
+## PR（Pull Request）でのマージルール
+
+### 通常リリース（feature → develop → main）
+
+基本は以下の順で進める。
+
+1. `feature/*` → `develop` にPRを出してマージ
+2. `develop` のプレビュー環境で確認（※現状 kazuki しか見れないので連絡して👍）
+3. 問題なければ `develop` → `main` にPRを出してマージ
+4. `main` が更新されると本番環境へデプロイされる（※現状 kazuki しか見れないので連絡して👍）
+5. マージ済みの `feature/*` ブランチは削除する
+
+### 緊急リリース（hotfix）
+
+本番で緊急度の高いバグが見つかった場合は以下。
+
+1. `main` を最新化して `hotfix/*` を作成（`main` から checkout）
+2. 修正して `hotfix/*` → `main` にPRを出してマージ
+3. `main` が更新されると本番環境へデプロイされる
+4. `main` の修正を `develop` へバックマージ（取り込み漏れ防止）
+5. マージ済みの `hotfix/*` ブランチは削除する
