@@ -28,13 +28,9 @@ export default function Header() {
           <button type="button" className={iconButtonClass} aria-label="マイページ">
             <UserIcon />
           </button>
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#C9BEFF] text-white transition hover:bg-[#FFDBFD]"
-            aria-label="登録"
-          >
+          <Link to="/register" className={iconButtonClass} aria-label="登録">
             <PlusIcon />
-          </button>
+          </Link>
           <Link
             to="/"
             className={iconButtonClass}
