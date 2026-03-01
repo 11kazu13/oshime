@@ -4,11 +4,16 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 export default function Header() {
   const iconButtonClass =
     'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#C9BEFF] text-white transition hover:bg-[#FFDBFD]'
+
   const navigate = useNavigate()
+
   const q = useRouterState({
     select: (state) =>
-      typeof state.location.search?.q === 'string' ? state.location.search.q : undefined,
+      typeof state.location.search?.q === 'string'
+        ? state.location.search.q
+        : undefined,
   })
+
   const searchInputId = useId()
   const [searchInput, setSearchInput] = useState(q || '')
 
@@ -63,16 +68,15 @@ export default function Header() {
           </form>
 
           <div className="flex items-center gap-2">
+            {/* ルートがあるなら Link に置き換えてOK（例: to="/me"） */}
             <button type="button" className={iconButtonClass} aria-label="マイページ">
               <UserIcon />
             </button>
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#C9BEFF] text-white transition hover:bg-[#FFDBFD]"
-              aria-label="登録"
-            >
+
+            <Link to="/register" className={iconButtonClass} aria-label="登録">
               <PlusIcon />
-            </button>
+            </Link>
+
             <Link
               to="/"
               className={iconButtonClass}
