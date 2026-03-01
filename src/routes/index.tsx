@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useId, useState, type FormEvent } from 'react'
 import { getArtists } from '#/server/artists'
 
 const TAGS = [
@@ -53,19 +52,12 @@ export const Route = createFileRoute('/')({
 function TopPage() {
   const initialData = Route.useLoaderData()
   const { q } = Route.useSearch()
-  const navigate = Route.useNavigate()
-  const searchInputId = useId()
-  const [searchInput, setSearchInput] = useState(q || '')
 
   const { data } = useQuery({
     queryKey: ['artists', q],
     queryFn: () => getArtists({ data: { q } }),
     initialData,
   })
-
-  useEffect(() => {
-    setSearchInput(q || '')
-  }, [q])
 
   const artists = buildShelfArtists(data ?? [])
   const spotlight = pickWithWrap(artists, 0, 6)
@@ -77,65 +69,9 @@ function TopPage() {
       .filter((group): group is string => Boolean(group)),
   ).size
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    navigate({ search: { q: searchInput || undefined } })
-  }
-
   return (
     <main className="idol-home px-4 pb-14 pt-6 text-white sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-[1180px] space-y-8">
-        <section className="idol-hero rounded-[26px] px-5 py-6 sm:px-8 sm:py-8">
-          <div className="grid gap-7 lg:grid-cols-[1.35fr_1fr] lg:gap-10">
-            <div className="space-y-4">
-              <p className="m-0 text-xs font-bold tracking-[0.18em] text-[#FFDBFD]">
-                TOP PAGE
-              </p>
-              <h1 className="display-title m-0 text-3xl leading-tight text-white sm:text-4xl">
-                人気アーティストを
-                <br />
-                ひと目でチェック
-              </h1>
-              <p className="m-0 max-w-[36ch] text-sm text-white/90 sm:text-base">
-                指定タグで絞り込みながら、人気・注目、お気に入り、ランキングを一気に見られるトップページです。
-              </p>
-              <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row">
-                <label htmlFor={searchInputId} className="sr-only">
-                  アーティスト検索
-                </label>
-                <input
-                  id={searchInputId}
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="アーティスト名 / グループ名で検索"
-                  className="h-11 flex-1 rounded-xl border border-[#FFDBFD] bg-[#C9BEFF] px-4 text-sm text-white outline-none transition placeholder:text-white/70 focus:border-[#FFDBFD] focus:ring-2 focus:ring-[#FFDBFD]/40"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#FFDBFD] bg-[#C9BEFF] px-5 text-sm font-bold text-white transition hover:bg-[#FFDBFD]"
-                >
-                  検索
-                </button>
-              </form>
-              {q ? (
-                <p className="m-0 text-xs font-semibold text-[#FFDBFD] sm:text-sm">
-                  「{q}」の検索結果を表示中
-                </p>
-              ) : (
-                <p className="m-0 text-xs text-white/80 sm:text-sm">
-                  注目のアーティストを新着順で表示中
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard label="表示アーティスト" value={`${artists.length}`} />
-              <StatCard label="グループ数" value={`${groupCount}`} />
-              <StatCard label="タグ数" value={`${TAGS.length}`} />
-              <StatCard label="更新頻度" value="Daily" />
-            </div>
-          </div>
-        </section>
 
         <section className="space-y-3">
           <h2 className="m-0 text-xl font-bold text-white">タグ</h2>
