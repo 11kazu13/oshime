@@ -16,11 +16,11 @@ TypeScriptでフルスタック開発する。
 - バリデーション: Zod
 - デプロイ: Vercel
 
-### TanStack Start とは
+### TanStack Startとは
 
-TanStack Router をベースとしたフルスタックフレームワーク。
+TanStack Routerをベースとしたフルスタックフレームワーク。
 
-概要を掴む際は、AIに聞くか以下の動画がわかりやすい。<br>
+概要を掴む際は、AIに聞くか以下の動画がわかりやすい。  
 https://youtu.be/OFVjBIjInP8?si=5hOFoKhJB2ECpioJ
 
 ---
@@ -42,50 +42,55 @@ https://github.com/users/11kazu13/projects/4/views/1
 - なぜやるのか（目的）
 - どうやるのか（方針・実装イメージ）
 
-メモは短くてよいが、後で見返して分かること／他の人が見ても作業内容を把握できることを意識する。
+メモは短くてよいが、後で見返して分かること、他の人が見ても作業内容を把握できることを意識する。
 
 ---
 
 ## 開発ガイド
 
-コマンド操作はターミナルで行う（git / docker / npm などはすべてターミナル）。
+コマンド操作はターミナルで行う。  
+`git` / `docker` / `npm` などはすべてターミナルで扱う。
 
-### 初回の構築ステップ（通常は不要）
+### 初回の構築ステップ
 
-1. リポジトリをクローン（すでにある場合は不要。代わりに `git pull`）
+通常は初回のみ実施する。すでにローカルにリポジトリがある場合は `git clone` は不要。
+
+#### 1. リポジトリをクローン
 
 ```bash
 git clone <repository_url>
 cd oshime
-```
+````
 
-2. 依存関係をインストール
+#### 2. 依存関係をインストール
 
 ```bash
 npm install
 ```
 
-3. ローカルDB（Docker）を起動
-   ※ Docker Desktop が起動していることを確認してから実行する。
+#### 3. ローカルDB（Docker）を起動
+
+Docker Desktopが起動していることを確認してから実行する。
 
 ```bash
 docker compose up -d
 ```
 
-4. 環境変数の設定
-   プロジェクトルートに `.env.local` を作成し、DockerのローカルDBに向けた接続URLを設定する。
+#### 4. 環境変数を設定
+
+プロジェクトルートに `.env.local` を作成し、DockerのローカルDBに向けた接続URLを設定する。
 
 ```env
 DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
 ```
 
-5. データベーススキーマを反映（ローカルDBに適用）
+#### 5. データベーススキーマを反映
 
 ```bash
 npm run db:push
 ```
 
-6. 開発サーバーを起動
+#### 6. 開発サーバーを起動
 
 ```bash
 npm run dev
@@ -95,239 +100,354 @@ npm run dev
 
 ---
 
-## インフラとブランチ戦略
+## 環境構成
 
 本番データの保護と安全なリリースサイクルのため、DB（Supabase）を物理的に2つに分離し、GitHubブランチとVercelのデプロイ環境を同期させる。
 
-### データベースの分離
+### データベース
 
-* oshime-production（本番環境用DB）
-* oshime-staging（ステージング / チーム開発・テスト用DB）
+* `oshime-production`：本番環境用DB
+* `oshime-staging`：ステージング / チーム開発・テスト用DB
 
-### 一時ブランチ（作業が終われば削除するブランチ）
+### ブランチとデプロイ環境
 
-機能追加や改修があるたびに、頻繁に追加・削除されるブランチ。<br>
-マージ後に画面から新しく作成したブランチを削除する。
+| ブランチ        | 用途                    | 接続先DB               |
+| ----------- | --------------------- | ------------------- |
+| `main`      | 本番公開用                 | `oshime-production` |
+| `develop`   | チーム内でのコード統合、リリース前テスト  | `oshime-staging`    |
+| `feature/*` | 通常の機能開発、改善、緊急ではないバグ修正 | ローカルDB              |
+| `hotfix/*`  | 本番で見つかった緊急度の高い不具合対応   | 原則、本番に近い状態で確認       |
 
-| ブランチ名の接頭語 | 用途       |
-| --------- | -------- |
-| feature/  | 機能開発    |
-| hotfix/   | 緊急の不具合対応 |
+---
 
-### ブランチの役割
+## ブランチ戦略
 
-#### 一時ブランチ①：feature/*（機能開発用）
+### `main`
 
-* 用途: 新機能開発 / 通常の改善 / バグ修正（緊急ではないもの）
-* DB: 手元のLocal DB
-* `develop` から派生し、完了したら GitHub に push → `develop` へPRを出してマージ
-* マージ後、このブランチは削除する
+* 本番公開用ブランチ
+* `develop` で検証済みのものだけをPRでマージする
+* 直接コミット、直接pushはしない
+* ただし、`git pull` で最新化するのはOK
+* 緊急修正時のみ `hotfix/*` からPRでマージされる
 
-命名例（*の部分にやりたいことを書く）:
+### `develop`
+
+* 通常開発の基準となるブランチ
+* `feature/*` は基本的に `develop` から作成する
+* チーム内でコードを統合し、ステージングで確認するためのブランチ
+
+### `feature/*`
+
+* 通常の機能開発用ブランチ
+* `develop` から作成する
+* 開発完了後は `develop` にPRを出してマージする
+* マージ後は削除する
+
+命名例:
 
 * `feature/login`
 * `feature/artist-register`
 
-#### 一時ブランチ②：hotfix/*（緊急バグ修正用）
+### `hotfix/*`
 
-* 用途: 本番環境で見つかった緊急度の高い不具合対応
-* DB: 原則、本番に合わせた状態で再現・修正する
-* `main` から派生し、完了したら `main` へPRを出してマージ
-* 重要: hotfix は `main` から切るため、開発環境（`develop`）には修正が入っていない状態になる
-  → `main` マージ後に、適宜 `develop` へバックマージする
-* マージ後、このブランチは削除する
+* 緊急バグ修正用ブランチ
+* `main` から作成する
+* 修正後は `main` にPRを出してマージする
+* `main` に入れた修正は、取り込み漏れ防止のため `develop` にも反映する
+* マージ後は削除する
 
 命名例:
 
-* `hotfix/決済エラー`
-* `hotfix/緊急ログイン不具合`
-
-#### develop ブランチ（ステージング / Preview）
-
-* 用途: チーム内でのコード統合、リリース前テスト
-* DB: oshime-staging
-* `feature/*` がマージされると、Vercelが自動でビルド・デプロイする
-
-#### main ブランチ（本番 / Production）
-
-* 用途: 本番公開用
-* DB: oshime-production
-* `develop` で検証済みのものだけをPRでマージする（直接コミットはNG）
-* `hotfix/*` は例外的に `main` に直接マージされる（緊急対応）
+* `hotfix/payment-error`
+* `hotfix/login-bug`
 
 ---
 
-## 別々に開発する場合の進め方
+## 2人開発の基本ルール
 
-通常の開発と同様に、各自が作業ブランチ（基本は feature/*）を作成して進める。
-
-* まず[タスク管理表](https://github.com/users/11kazu13/projects/4/views/1)に「やりたい内容」を書く
-* 例: ログイン機能を実装したい場合
-
-  * タスク: ログイン機能の実装
-  * ブランチ: `feature/login`（または `feature/ログイン機能`）
+* 作業を始める前に、タスク管理表にやることを書く
+* 通常開発は `develop` を基準に進める
+* 緊急修正だけ `main` を基準に進める
+* `main` や `develop` で直接作業しない
+* 実際の作業は必ず `feature/*` または `hotfix/*` で行う
+* マージ後は不要になった作業ブランチを削除する
 
 ---
 
-## 開発開始時のルーティン（毎回）
+## 作業開始時の流れ
 
-まず `develop` を最新化する（ここが基準）。
+### 通常開発
+
+#### 1. `develop` を最新化する
 
 ```bash
 git switch develop
 git pull
 ```
 
-次に自分の作業ブランチへ移動する（例：ログイン機能の実装）
+#### 2-A. すでに作業ブランチがある場合
+
+例: `feature/login` がすでにある場合
 
 ```bash
 git switch feature/login
-```
-
-`develop` の最新を自分のブランチへ取り込む。
-
-```bash
 git merge develop
 ```
 
-この流れで、作業ブランチは常に `develop` を土台に進められる。
+これで、既存の作業ブランチに `develop` の最新を取り込める。
+
+#### 2-B. まだ作業ブランチがない場合
+
+新しく作業を始めるときは、最新の `develop` から作業ブランチを作る。
+
+```bash
+git switch develop
+git pull
+git switch -c feature/login
+```
+
+これで `feature/login` を新規作成できる。
+
+### 緊急修正
+
+本番で緊急度の高いバグが見つかった場合は、`main` を基準に `hotfix/*` を作る。
+
+```bash
+git switch main
+git pull
+git switch -c hotfix/login-bug
+```
 
 ---
 
-## git pull の注意点
+## `git pull` の考え方
 
-`git pull` は「今チェックアウトしているブランチ」に対して動く。
+`git pull` は、今チェックアウトしているブランチに対して実行される。
 
-* ローカルで `feature/login` にいる状態で、そのブランチを push して運用している（`origin/feature/login` がある）なら、`origin/feature/login` から pull する
-* 作業ブランチがローカル専用で、リモートに存在しない場合は `git pull` しても引く先がない
-  → この場合は `develop` を最新化してから、自分のブランチへ `merge` する（上のルーティン通り）
+### 例1: `develop` を最新化したい場合
+
+```bash
+git switch develop
+git pull
+```
+
+### 例2: `main` を最新化したい場合
+
+```bash
+git switch main
+git pull
+```
+
+`main` を `pull` すること自体は問題ない。
+ダメなのは、`main` で直接作業してそのまま commit / push すること。
+
+### 例3: 自分の作業ブランチを `pull` する場合
+
+すでに `origin/feature/login` が存在していて、そのブランチを自分でも使っているなら、`feature/login` 上で `git pull` してよい。
+
+```bash
+git switch feature/login
+git pull
+```
+
+### 例4: ローカル専用ブランチの場合
+
+まだリモートに存在しない作業ブランチでは、`git pull` しても引く先がない。
+その場合は、`develop` を最新化してから自分のブランチへ取り込む。
+
+```bash
+git switch develop
+git pull
+git switch feature/login
+git merge develop
+```
 
 ---
 
 ## ローカルで動作確認する手順
 
-1. Docker Desktop を起動する
-2. ターミナルでDBを起動する
+### 1. Docker Desktopを起動する
+
+### 2. DBを起動する
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-3. 開発サーバーを起動する
+### 3. 開発サーバーを起動する
 
 ```bash
 npm run dev
 ```
 
-4. 表示されたURL（例: [http://localhost:3000](http://localhost:3000) ）を開き、ローカルの変更が反映されているか確認する
+### 4. ブラウザで確認する
+
+表示されたURL（例: `http://localhost:3000`）を開き、ローカルの変更が反映されているか確認する。
 
 ---
 
-## push の手順
+## pushの手順
 
-push前に「今どのブランチにいるか」を必ず確認する。
+push前に、必ず今いるブランチを確認する。
+
+### 1. 現在のブランチを確認
 
 ```bash
 git branch
 ```
 
-ブランチを移動する場合は `switch`。<br>
-例：ログイン機能開発のブランチに移動する際
+### 2. 必要なら作業ブランチへ移動
 
 ```bash
 git switch feature/login
 ```
 
-ブランチを新しく作る場合は `checkout -b`。
+### 3. まだブランチがなければ新規作成
 
 ```bash
-git checkout -b feature/login
+git switch -c feature/login
 ```
 
-差分を確認する。
+### 4. 差分を確認
 
 ```bash
 git status
 ```
 
-問題なければステージする（`.` は全ファイルが対象）。
+### 5. ステージする
 
 ```bash
 git add .
 ```
 
-もう一度 `status` を確認する（赤が緑になっていればOK）。
+### 6. もう一度確認
 
 ```bash
 git status
 ```
 
-コミットする。
+### 7. コミットする
 
 ```bash
 git commit -m "ログイン画面のUIを調整"
 ```
 
-作業ブランチをpushする（原則 `develop` や `main` には push しない）。
+### 8. 作業ブランチをpushする
 
 ```bash
 git push origin feature/login
 ```
 
+原則として、`develop` や `main` には直接pushしない。
+
+---
+
+## PRでのマージルール
+
+### 通常リリース
+
+通常の機能開発は以下の流れで進める。
+
+1. `feature/*` で作業する
+2. `feature/*` から `develop` にPRを出してマージする
+3. `develop` のプレビュー環境で確認する
+4. 問題なければ `develop` から `main` にPRを出してマージする
+5. `main` が更新されると本番環境へデプロイされる
+6. マージ済みの `feature/*` ブランチは削除する
+
+### 緊急リリース
+
+本番で緊急度の高いバグが見つかった場合は以下の流れで進める。
+
+1. `main` を最新化する
+2. `main` から `hotfix/*` を作成する
+3. 修正後、`hotfix/*` から `main` にPRを出してマージする
+4. `main` が更新されると本番環境へデプロイされる
+5. `main` に入った修正を `develop` にも反映する
+6. マージ済みの `hotfix/*` ブランチは削除する
+
 ---
 
 ## ブランチの削除方法
 
-Git での「ブランチ削除」は **ローカル**と**リモート**でコマンドが違う
+ブランチ削除は、ローカルとリモートでコマンドが異なる。
 
-### 1) ローカルブランチを削除
+### ローカルブランチを削除
 
-マージ済みなら
+マージ済みの場合:
 
 ```bash
 git branch -d ブランチ名
-````
+```
 
-マージしてなくても強制削除
+未マージでも強制削除する場合:
 
 ```bash
 git branch -D ブランチ名
 ```
 
-### 2) リモートブランチを削除（GitHub など）
+### リモートブランチを削除
 
 ```bash
 git push origin --delete ブランチ名
 ```
 
-### よくある注意
+### 注意
 
-今いるブランチは削除できないので、先に移動：
+今いるブランチは削除できないので、先に別のブランチへ移動する。
 
 ```bash
-git switch main
+git switch develop
 ```
 
 ---
 
-## PR（Pull Request）でのマージルール
+## よくある開発フローの例
 
-### 通常リリース（feature → develop → main）
+### 例1: 新しくログイン機能を作る場合
 
-基本は以下の順で進める。
+```bash
+git switch develop
+git pull
+git switch -c feature/login
+```
 
-1. `feature/*` → `develop` にPRを出してマージ
-2. `develop` のプレビュー環境で確認（※現状 kazuki しか見れないので連絡して👍）
-3. 問題なければ `develop` → `main` にPRを出してマージ
-4. `main` が更新されると本番環境へデプロイされる（※現状 kazuki しか見れないので連絡して👍）
-5. マージ済みの `feature/*` ブランチは削除する
+作業後:
 
-### 緊急リリース（hotfix）
+```bash
+git add .
+git commit -m "ログイン機能を追加"
+git push origin feature/login
+```
 
-本番で緊急度の高いバグが見つかった場合は以下。
+その後、`feature/login` → `develop` にPRを出す。
 
-1. `main` を最新化して `hotfix/*` を作成（`main` から checkout）
-2. 修正して `hotfix/*` → `main` にPRを出してマージ
-3. `main` が更新されると本番環境へデプロイされる
-4. `main` の修正を `develop` へバックマージ（取り込み漏れ防止）
-5. マージ済みの `hotfix/*` ブランチは削除する
+### 例2: 既存の作業ブランチを再開する場合
+
+```bash
+git switch develop
+git pull
+git switch feature/login
+git merge develop
+```
+
+### 例3: 本番の緊急バグを修正する場合
+
+```bash
+git switch main
+git pull
+git switch -c hotfix/login-bug
+```
+
+作業後、`hotfix/login-bug` → `main` にPRを出す。
+その後、`main` に入った修正を `develop` にも反映する。
+
+---
+
+## 補足
+
+* `main` は pullしてよい
+* `develop` も pullしてよい
+* ダメなのは、`main` や `develop` を作業ブランチ代わりに使うこと
+* 普段の開発は `develop` から `feature/*` を切る
+* 緊急修正だけ `main` から `hotfix/*` を切る
