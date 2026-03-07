@@ -3,7 +3,7 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 
 export default function Header() {
   const iconButtonClass =
-    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#C9BEFF] text-white transition hover:bg-[#FFDBFD]'
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#C9BEFF] !text-white transition hover:bg-[#FFDBFD]'
 
   const navigate = useNavigate()
 
@@ -34,9 +34,6 @@ export default function Header() {
             to="/"
             className="inline-flex items-center gap-2 rounded-full border border-[#FFDBFD] bg-transparent px-3 py-1.5 text-sm text-white no-underline sm:px-4 sm:py-2"
           >
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#C9BEFF] text-xs font-bold text-white">
-              推
-            </span>
             <span className="display-title text-base text-white sm:text-lg">
               OSHIME
             </span>
@@ -82,7 +79,7 @@ export default function Header() {
               className={iconButtonClass}
               activeProps={{
                 className:
-                  'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#FFDBFD] text-white',
+                  'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#FFDBFD] bg-[#FFDBFD] !text-white',
               }}
               aria-label="トップページ"
             >
