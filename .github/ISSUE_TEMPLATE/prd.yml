@@ -1,3 +1,23 @@
-# 概要
-# 目的
-# 詳細
+name: PRD
+description: プロダクト要件定義を作成する
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 概要（what）
+    validations:
+      required: true
+
+  - type: textarea
+    id: how
+    attributes:
+      label: 詳細（how）
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 背景・目的（why）
+    validations:
+      required: true
