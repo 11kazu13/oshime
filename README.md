@@ -60,7 +60,7 @@ https://github.com/users/11kazu13/projects/4/views/1
 ```bash
 git clone <repository_url>
 cd oshime
-````
+```
 
 #### 2. 依存関係をインストール
 
@@ -106,17 +106,17 @@ npm run dev
 
 ### データベース
 
-* `oshime-production`：本番環境用DB
-* `oshime-staging`：ステージング / チーム開発・テスト用DB
+- `oshime-production`：本番環境用DB
+- `oshime-staging`：ステージング / チーム開発・テスト用DB
 
 ### ブランチとデプロイ環境
 
-| ブランチ        | 用途                    | 接続先DB               |
-| ----------- | --------------------- | ------------------- |
-| `main`      | 本番公開用                 | `oshime-production` |
-| `develop`   | チーム内でのコード統合、リリース前テスト  | `oshime-staging`    |
-| `feature/*` | 通常の機能開発、改善、緊急ではないバグ修正 | ローカルDB              |
-| `hotfix/*`  | 本番で見つかった緊急度の高い不具合対応   | 原則、本番に近い状態で確認       |
+| ブランチ | 用途 | 接続先DB |
+| --- | --- | --- |
+| `main` | 本番公開用 | `oshime-production` |
+| `develop` | チーム内でのコード統合、リリース前テスト | `oshime-staging` |
+| `feature/*` | 通常の機能開発、改善、緊急ではないバグ修正 | ローカルDB |
+| `hotfix/*` | 本番で見つかった緊急度の高い不具合対応 | 原則、本番に近い状態で確認 |
 
 ---
 
@@ -124,53 +124,56 @@ npm run dev
 
 ### `main`
 
-* 本番公開用ブランチ
-* `develop` で検証済みのものだけをPRでマージする
-* 直接コミット、直接pushはしない
-* ただし、`git pull` で最新化するのはOK
-* 緊急修正時のみ `hotfix/*` からPRでマージされる
+- 本番公開用ブランチ
+- `develop` で検証済みのものだけをPRでマージする
+- 直接コミット、直接pushはしない
+- ただし、`git pull` で最新化するのはOK
+- 緊急修正時のみ `hotfix/*` からPRでマージされる
 
 ### `develop`
 
-* 通常開発の基準となるブランチ
-* `feature/*` は基本的に `develop` から作成する
-* チーム内でコードを統合し、ステージングで確認するためのブランチ
+- 通常開発の基準となるブランチ
+- `feature/*` は基本的に `develop` から作成する
+- チーム内でコードを統合し、ステージングで確認するためのブランチ
 
 ### `feature/*`
 
-* 通常の機能開発用ブランチ
-* `develop` から作成する
-* 開発完了後は `develop` にPRを出してマージする
-* マージ後は削除する
+- 通常の機能開発用ブランチ
+- `develop` から作成する
+- 開発完了後は `develop` にPRを出してマージする
+- マージ後は削除する
 
 命名例:
 
-* `feature/login`
-* `feature/artist-register`
+- `feature/login`
+- `feature/artist-register`
 
 ### `hotfix/*`
 
-* 緊急バグ修正用ブランチ
-* `main` から作成する
-* 修正後は `main` にPRを出してマージする
-* `main` に入れた修正は、取り込み漏れ防止のため `develop` にも反映する
-* マージ後は削除する
+- 緊急バグ修正用ブランチ
+- `main` から作成する
+- 修正後は `main` にPRを出してマージする
+- `main` に入れた修正は、取り込み漏れ防止のため `develop` にも反映する
+- マージ後は削除する
 
 命名例:
 
-* `hotfix/payment-error`
-* `hotfix/login-bug`
+- `hotfix/payment-error`
+- `hotfix/login-bug`
 
 ---
 
 ## 2人開発の基本ルール
 
-* 作業を始める前に、タスク管理表にやることを書く
-* 通常開発は `develop` を基準に進める
-* 緊急修正だけ `main` を基準に進める
-* `main` や `develop` で直接作業しない
-* 実際の作業は必ず `feature/*` または `hotfix/*` で行う
-* マージ後は不要になった作業ブランチを削除する
+- 作業を始める前に、タスク管理表にやることを書く
+- 通常開発は `develop` を基準に進める
+- 緊急修正だけ `main` を基準に進める
+- `main` や `develop` で直接作業しない
+- 実際の作業は必ず `feature/*` または `hotfix/*` で行う
+- マージ後は不要になった作業ブランチを削除する
+- 通常運用では `develop` → `main` の一方向でリリースする
+- `main` → `develop` の反映は、`hotfix/*` を `main` に入れたときだけ行う
+- `main` と `develop` を毎回双方向にマージして揃えようとしない
 
 ---
 
@@ -238,7 +241,7 @@ git switch main
 git pull
 ```
 
-`main` を `pull` すること自体は問題ない。
+`main` を `pull` すること自体は問題ない。  
 ダメなのは、`main` で直接作業してそのまま commit / push すること。
 
 ### 例3: 自分の作業ブランチを `pull` する場合
@@ -252,7 +255,7 @@ git pull
 
 ### 例4: ローカル専用ブランチの場合
 
-まだリモートに存在しない作業ブランチでは、`git pull` しても引く先がない。
+まだリモートに存在しない作業ブランチでは、`git pull` しても引く先がない。  
 その場合は、`develop` を最新化してから自分のブランチへ取り込む。
 
 ```bash
@@ -366,6 +369,108 @@ git push origin feature/login
 5. `main` に入った修正を `develop` にも反映する
 6. マージ済みの `hotfix/*` ブランチは削除する
 
+### マージ時の補足
+
+- 通常運用では、`develop` を `main` にリリースする流れを基本にする
+- 毎回 `main` を `develop` に戻して同期しようとすると、マージコミットが増えて履歴が複雑になりやすい
+- そのため、`main` → `develop` の反映は hotfix のときだけにする
+- 通常リリースのたびに `main` と `develop` を完全一致させる必要はない
+
+---
+
+## ahead / behind の見方
+
+GitHubでは、あるブランチが比較対象のブランチに対して何コミット進んでいるか、何コミット遅れているかが表示されることがある。
+
+- `ahead` = そのブランチにしかないコミットがある
+- `behind` = 比較対象のブランチにあるコミットが、そのブランチにはまだない
+
+### `develop` が `main` より ahead の場合
+
+例: `develop is 3 commits ahead of main`
+
+- 意味: `develop` に本番未反映の変更がある
+- 基本的には正常
+- まだ本番に出したくないなら、そのままでよい
+- 本番に出してよい状態なら `develop` → `main` のPRを出す
+
+### `develop` が `main` より behind の場合
+
+例: `develop is 1 commit behind main`
+
+- 意味: `main` に入っている変更が `develop` にまだ入っていない
+- 特に hotfix 後に起こりやすい
+- この場合は確認した方がよい
+- hotfix を `main` に入れたあとであれば、`main` の修正を `develop` に反映する
+
+### `main` が `develop` より behind の場合
+
+例: `main is 5 commits behind develop`
+
+- 意味: `develop` にある変更が、まだ `main` に入っていない
+- 通常は問題ない
+- まだリリース前ならそのままでよい
+- 本番に出すタイミングで `develop` → `main` を行う
+
+### `feature/*` が `develop` より ahead の場合
+
+- 意味: 作業ブランチ上で開発が進んでいる
+- 正常
+- 作業完了後に `feature/*` → `develop` のPRを出す
+
+### `feature/*` が `develop` より behind の場合
+
+- 意味: `develop` に新しい変更が入ったが、自分の作業ブランチへまだ取り込んでいない
+- 放置しすぎるとコンフリクトの原因になる
+- 作業再開時やPR前に、`develop` を取り込むとよい
+
+```bash
+git switch develop
+git pull
+git switch feature/login
+git merge develop
+```
+
+### `hotfix/*` が `main` より ahead の場合
+
+- 意味: 緊急修正ブランチで作業している状態
+- 正常
+- 修正完了後に `hotfix/*` → `main` のPRを出す
+
+### `main` と `develop` の両方で ahead / behind が出る場合
+
+例: `develop is 1 commit ahead, 1 commit behind main`
+
+- 意味: `main` と `develop` がそれぞれ相手にないコミットを持っている
+- 双方向のマージを繰り返したときに起こりやすい
+- 実ファイル差分が少なくても、マージコミットの差で表示されることがある
+- 毎回この状態になる場合は、運用を見直した方がよい
+
+### どの表示に対応するべきか
+
+#### 基本的に問題ないことが多い表示
+
+- `develop` が `main` より ahead
+- `feature/*` が `develop` より ahead
+- `hotfix/*` が `main` より ahead
+
+これらは「未リリース」または「作業中」を意味することが多い。
+
+#### 確認した方がよい表示
+
+- `develop` が `main` より behind
+- `feature/*` が `develop` より behind
+
+これらは「取り込むべき変更がまだ入っていない」可能性がある。
+
+#### 運用を見直した方がよい表示
+
+- `main` と `develop` の両方で ahead / behind が出る
+- `develop` を `main` にマージしても、またすぐ逆方向の差分表示が出る
+
+この場合は、`main` と `develop` を双方向に毎回マージしている可能性がある。  
+通常運用では `develop` → `main` を基本にし、`main` → `develop` は hotfix のときだけにする。
+
 ---
 
 ## ブランチの削除方法
@@ -439,15 +544,18 @@ git pull
 git switch -c hotfix/login-bug
 ```
 
-作業後、`hotfix/login-bug` → `main` にPRを出す。
+作業後、`hotfix/login-bug` → `main` にPRを出す。  
 その後、`main` に入った修正を `develop` にも反映する。
 
 ---
 
 ## 補足
 
-* `main` は pullしてよい
-* `develop` も pullしてよい
-* ダメなのは、`main` や `develop` を作業ブランチ代わりに使うこと
-* 普段の開発は `develop` から `feature/*` を切る
-* 緊急修正だけ `main` から `hotfix/*` を切る
+- `main` は pullしてよい
+- `develop` も pullしてよい
+- ダメなのは、`main` や `develop` を作業ブランチ代わりに使うこと
+- 普段の開発は `develop` から `feature/*` を切る
+- 緊急修正だけ `main` から `hotfix/*` を切る
+- 通常運用では `develop` → `main` を基本にする
+- `main` → `develop` は hotfix のときだけにする
+- `main` と `develop` を毎回双方向にマージして完全同期しようとしない
