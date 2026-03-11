@@ -1,4 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
+import { createArtist } from '#/server/artists'
 
 export const Route = createFileRoute('/register')({
   component: RegisterPage,
@@ -105,6 +107,59 @@ const MBTI_TYPES = [
 ]
 
 function RegisterPage() {
+  const router = useRouter()
+  
+  const createMutation = useMutation({
+    mutationFn: async (payload: NonNullable<Parameters<typeof createArtist>[0]>['data']) => {
+      return await createArtist({ data: payload })
+    },
+    onSuccess: () => {
+      router.invalidate()
+      router.navigate({ to: '/' })
+    },
+    onError: (err) => {
+      console.error(err)
+      alert('エラーが発生しました')
+    }
+  })
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    
+    // Extract base fields
+    const name = formData.get('name') as string
+    const groupName = formData.get('groupName') as string || undefined
+    const birthday = formData.get('birthday') as string || undefined
+    const birthplace = formData.get('birthplace') as string || undefined
+    const mbti = formData.get('mbti') as string || undefined
+    const memberColor = formData.get('memberColor') as string || undefined
+    const xAccount = formData.get('xAccount') as string || undefined
+
+    // Extract tags
+    const tags: string[] = []
+    const categoryTags = formData.getAll('tag')
+    for (const t of categoryTags) {
+      if (typeof t === 'string' && t.trim()) tags.push(t.trim())
+    }
+    const customTag = formData.get('tagRequest')
+    if (typeof customTag === 'string' && customTag.trim()) {
+      tags.push(customTag.trim())
+    }
+
+    createMutation.mutate({
+      name,
+      groupName,
+      birthday,
+      birthplace,
+      mbti,
+      memberColor,
+      xAccount,
+      tags
+    })
+  }
+
   return (
     <main className="px-4 pb-16 pt-10 text-white sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-[960px] space-y-4">
@@ -115,7 +170,7 @@ function RegisterPage() {
           登録ページ
         </h1>
       </div>
-      <form className="mx-auto mt-8 w-full max-w-[960px] space-y-6 rounded-[20px] border border-[#FFDBFD] bg-[color-mix(in_oklab,#C9BEFF,transparent_30%)] p-5 sm:p-7">
+      <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-[960px] space-y-6 rounded-[20px] border border-[#FFDBFD] bg-[color-mix(in_oklab,#C9BEFF,transparent_30%)] p-5 sm:p-7">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-semibold text-white">
@@ -236,9 +291,10 @@ function RegisterPage() {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#FFDBFD] bg-[#6367FF] px-6 text-sm font-bold text-white transition hover:bg-[#FFDBFD]"
+            disabled={createMutation.isPending}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#FFDBFD] bg-[#6367FF] px-6 text-sm font-bold text-white transition hover:bg-[#FFDBFD] disabled:opacity-50"
           >
-            登録
+            {createMutation.isPending ? '登録中...' : '登録'}
           </button>
         </div>
       </form>

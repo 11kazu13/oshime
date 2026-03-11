@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { db } from '../db/index'
-import { artists, artistComments } from '../db/schema'
-import { eq, or, ilike, desc, sql } from 'drizzle-orm'
+import { artists, artistComments, tags as tagsTable, artistTags } from '../db/schema'
+import { eq, or, ilike, desc, sql, inArray } from 'drizzle-orm'
 import { createArtistSchema, updateArtistSchema, createArtistCommentSchema } from '../utils/schemas'
 import { z } from 'zod'
 
@@ -90,7 +90,7 @@ export const getArtistById = createServerFn({ method: 'GET' })
       logDbError('getArtistById', error)
       throw toClientDbError(error)
     }
-    
+
     if (result.length === 0) {
       throw new Error(`Artist ${id} not found`) // Or customize error handling
     }
@@ -101,8 +101,33 @@ export const createArtist = createServerFn({ method: 'POST' })
   .inputValidator(createArtistSchema)
   .handler(async ({ data }: { data: z.infer<typeof createArtistSchema> }) => {
     try {
-      const result = await db.insert(artists).values(data).returning()
-      return result[0]
+      const { tags, ...artistData } = data
+      const result = await db.insert(artists).values(artistData).returning()
+      const newArtist = result[0]
+
+      if (tags && tags.length > 0) {
+        // Insert tags, ignoring if they already exist
+        await db.insert(tagsTable)
+          .values(tags.map(t => ({ name: t })))
+          .onConflictDoNothing()
+
+        // Fetch the tag records to get their IDs
+        const existingTags = await db.select()
+          .from(tagsTable)
+          .where(inArray(tagsTable.name, tags))
+
+        // Create the junction records
+        if (existingTags.length > 0) {
+          await db.insert(artistTags)
+            .values(existingTags.map(t => ({
+              artistId: newArtist.id,
+              tagId: t.id
+            })))
+            .onConflictDoNothing()
+        }
+      }
+
+      return newArtist
     } catch (error) {
       logDbError('createArtist', error)
       throw toClientDbError(error)
@@ -181,5 +206,17 @@ export const getDbHealth = createServerFn({ method: 'GET' })
     } catch (error) {
       logDbError('getDbHealth', error)
       return { ok: false }
+    }
+  })
+
+export const getTags = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    try {
+       // Return all tags with their raw names
+       // We can iterate on popular/ranking sort later if needed
+       return await db.select().from(tagsTable).orderBy(desc(tagsTable.createdAt))
+    } catch(error) {
+      logDbError('getTags', error)
+      throw toClientDbError(error)
     }
   })

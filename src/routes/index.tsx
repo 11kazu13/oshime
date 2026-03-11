@@ -1,16 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { getArtists } from '#/server/artists'
-
-const TAGS = [
-  '男性アイドル',
-  '女性アイドル',
-  'ボーイズグループ',
-  'ガールズグループ',
-  'K-POP',
-  '地下アイドル',
-  'etc',
-]
+import { getArtists, getTags } from '#/server/artists'
 
 const SHELF_IMAGES = [
   '/images/lagoon-1.svg',
@@ -39,7 +29,14 @@ const FALLBACK_ARTISTS: ShelfArtist[] = [
 ]
 
 export const Route = createFileRoute('/')({
-  loader: async ({ deps }) => await getArtists({ data: { q: (deps as { q?: string }).q } }),
+  loader: async ({ deps }) => {
+    const q = (deps as { q?: string }).q
+    const [artists, tags] = await Promise.all([
+      getArtists({ data: { q } }),
+      getTags()
+    ])
+    return { artists, tags }
+  },
   loaderDeps: ({ search: { q } }) => ({ q }),
   validateSearch: (search: Record<string, unknown>): { q?: string } => {
     return {
@@ -53,13 +50,19 @@ function TopPage() {
   const initialData = Route.useLoaderData()
   const { q } = Route.useSearch()
 
-  const { data } = useQuery({
+  const { data: artistsData } = useQuery({
     queryKey: ['artists', q],
     queryFn: () => getArtists({ data: { q } }),
-    initialData,
+    initialData: initialData.artists,
   })
 
-  const artists = buildShelfArtists(data ?? [])
+  const { data: tagsData } = useQuery({
+    queryKey: ['tags'],
+    queryFn: () => getTags(),
+    initialData: initialData.tags,
+  })
+
+  const artists = buildShelfArtists(artistsData ?? [])
   const spotlight = pickWithWrap(artists, 0, 6)
   const favorites = pickWithWrap(artists, 2, 6)
   const ranking = pickWithWrap(artists, 0, 5)
@@ -76,9 +79,9 @@ function TopPage() {
         <section className="space-y-3">
           <h2 className="m-0 text-xl font-bold text-white">タグ</h2>
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {TAGS.map((tag) => (
-              <button key={tag} type="button" className="idol-tag whitespace-nowrap">
-                {tag}
+            {(tagsData ?? []).map((tag) => (
+              <button key={tag.id} type="button" className="idol-tag whitespace-nowrap">
+                {tag.name}
               </button>
             ))}
           </div>
