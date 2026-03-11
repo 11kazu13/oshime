@@ -1,7 +1,6 @@
 # oshime
 
 ## 技術スタック
-
 TypeScriptでフルスタック開発する。
 
 - 言語: TypeScript
@@ -16,23 +15,16 @@ TypeScriptでフルスタック開発する。
 - バリデーション: Zod
 - デプロイ: Vercel
 
-### TanStack Startとは
-
+## TanStack Startとは
 TanStack Routerをベースとしたフルスタックフレームワーク。
 
 概要を掴む際は、AIに聞くか以下の動画がわかりやすい。  
 https://youtu.be/OFVjBIjInP8?si=5hOFoKhJB2ECpioJ
 
----
-
 ## ディレクトリ構成
-
 モノレポを採用する。
 
----
-
 ## タスク管理
-
 やりたい内容は基本的にタスク管理表に記載する。  
 https://github.com/users/11kazu13/projects/4/views/1
 
@@ -44,31 +36,26 @@ https://github.com/users/11kazu13/projects/4/views/1
 
 メモは短くてよいが、後で見返して分かること、他の人が見ても作業内容を把握できることを意識する。
 
----
-
 ## 開発ガイド
-
 コマンド操作はターミナルで行う。  
-`git` / `docker` / `npm` などはすべてターミナルで扱う。
+git / docker / npm などはすべてターミナルで扱う。
 
-### 初回の構築ステップ
+## 初回の構築ステップ
+通常は初回のみ実施する。すでにローカルにリポジトリがある場合は git clone は不要。
 
-通常は初回のみ実施する。すでにローカルにリポジトリがある場合は `git clone` は不要。
-
-#### 1. リポジトリをクローン
-
+### 1. リポジトリをクローン
 ```bash
 git clone <repository_url>
 cd oshime
-```
+````
 
-#### 2. 依存関係をインストール
+### 2. 依存関係をインストール
 
 ```bash
 npm install
 ```
 
-#### 3. ローカルDB（Docker）を起動
+### 3. ローカルDB（Docker）を起動
 
 Docker Desktopが起動していることを確認してから実行する。
 
@@ -76,7 +63,7 @@ Docker Desktopが起動していることを確認してから実行する。
 docker compose up -d
 ```
 
-#### 4. 環境変数を設定
+### 4. 環境変数を設定
 
 プロジェクトルートに `.env.local` を作成し、DockerのローカルDBに向けた接続URLを設定する。
 
@@ -84,13 +71,13 @@ docker compose up -d
 DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
 ```
 
-#### 5. データベーススキーマを反映
+### 5. データベーススキーマを反映
 
 ```bash
 npm run db:push
 ```
 
-#### 6. 開発サーバーを起動
+### 6. 開発サーバーを起動
 
 ```bash
 npm run dev
@@ -98,7 +85,169 @@ npm run dev
 
 ターミナルに表示されたURLを開いて、ローカルサイトを確認する。
 
----
+## DB運用ルール（Supabase / ローカル切り替え）
+
+### 前提
+
+通常のローカル開発では、`DATABASE_URL` はローカルDBを向ける。
+
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
+```
+
+一方で、`develop` や `main` にマージされた変更の中に **DBスキーマ変更** が含まれる場合、必要に応じて Supabase 側のDBにも反映する。
+
+### Supabase の接続先
+
+#### 本番DB
+
+```env
+postgresql://postgres.gaovpseyjijsvpzbkulf:[YOUR-PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres
+```
+
+#### ステージングDB
+
+```env
+postgresql://postgres.jrzcsjwllubndohcshvr:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+```
+
+### 注意
+
+Supabase に接続するときは、**ダイレクトコネクトではなく Connection Pooler の IPv4 側を使うこと。**
+
+### パスワードについて
+
+DB接続用パスワードは、**Lark の開発系ドキュメント**に記載している。
+詳細な場所が不明な場合は **INO に確認**すること。
+
+### DB反映が必要なケース
+
+以下のような変更を `develop` や `main` に反映した場合は、Supabase 側DBへの反映が必要になることがある。
+
+* テーブル追加
+* カラム追加 / 変更
+* リレーション追加
+* 中間テーブル追加
+* インデックス追加
+* その他 schema 変更
+
+例:
+
+* `tags` テーブル追加
+* `artist_tags` テーブル追加
+
+### 基本ルール
+
+* **通常開発中はローカルDBを使う**
+* **スキーマ変更を staging / production に反映したいときだけ、一時的に `DATABASE_URL` を Supabase に切り替える**
+* DB反映後は、**必ずローカル用の `DATABASE_URL` に戻す**
+
+### ステージングDBへ push する手順
+
+`develop` に入った schema をステージングへ反映したい場合の例。
+
+#### 1. `develop` を最新化する
+
+```bash
+git switch develop
+git pull
+```
+
+#### 2. `.env.local` などの `DATABASE_URL` をステージングDBに変更する
+
+```env
+DATABASE_URL="postgresql://postgres.jrzcsjwllubndohcshvr:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
+```
+
+#### 3. schema を反映する
+
+```bash
+npm run db:push
+```
+
+#### 4. push 完了後、`DATABASE_URL` をローカルDBに戻す
+
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
+```
+
+### 本番DBへ push する手順
+
+`main` に入った schema を本番へ反映したい場合の例。
+
+#### 1. `main` を最新化する
+
+```bash
+git switch main
+git pull
+```
+
+#### 2. `.env.local` などの `DATABASE_URL` を本番DBに変更する
+
+```env
+DATABASE_URL="postgresql://postgres.gaovpseyjijsvpzbkulf:[YOUR-PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+```
+
+#### 3. schema を反映する
+
+```bash
+npm run db:push
+```
+
+#### 4. push 完了後、`DATABASE_URL` をローカルDBに戻す
+
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:54322/oshime_development"
+```
+
+### 重要な考え方
+
+`npm run db:push` は、以下の組み合わせで実行される。
+
+* **今チェックアウトしているブランチの schema**
+* **今 `DATABASE_URL` が向いているDB**
+
+つまり、どのブランチにいるかだけでなく、**どのDBを向いているか** が非常に重要。
+
+例:
+
+* `develop` ブランチ + staging の `DATABASE_URL`
+
+  * → staging DB に反映される
+* `main` ブランチ + production の `DATABASE_URL`
+
+  * → production DB に反映される
+* `develop` ブランチ + localhost の `DATABASE_URL`
+
+  * → ローカルDBにしか反映されない
+
+### 注意事項
+
+* **本番DBに対して誤って push しないこと**
+* `db:push` 実行前に、必ず以下を確認すること
+
+  * 今いるブランチが正しいか
+  * `DATABASE_URL` が意図した接続先か
+  * push先が production か staging か
+* Supabase 反映後、ローカル開発を続ける場合は `DATABASE_URL` をローカルへ戻し忘れないこと
+
+### トラブル例
+
+#### `relation "tags" does not exist`
+
+アプリが `tags` テーブルを読もうとしているのに、接続先DBにそのテーブルが存在していない状態。
+多くの場合は、**コードはマージされているが Supabase 側DBに schema が未反映** のときに起こる。
+
+#### `connect ECONNREFUSED`
+
+接続先DBに到達できていない状態。
+`DATABASE_URL` の接続先、ホスト、ポート、パスワード、Pooler のURLかどうかを確認する。
+
+### 補足
+
+ローカルでは動いていたのに `develop` / `main` 環境で落ちる場合、
+**ローカルDBには反映済みだが Supabase 側DBに未反映** というケースがある。
+その場合は、対象ブランチの最新 schema を確認した上で、適切な Supabase DB に対して `npm run db:push` を行う。
 
 ## 環境構成
 
@@ -106,76 +255,70 @@ npm run dev
 
 ### データベース
 
-- `oshime-production`：本番環境用DB
-- `oshime-staging`：ステージング / チーム開発・テスト用DB
+* `oshime-production`：本番環境用DB
+* `oshime-staging`：ステージング / チーム開発・テスト用DB
 
 ### ブランチとデプロイ環境
 
-| ブランチ | 用途 | 接続先DB |
-| --- | --- | --- |
-| `main` | 本番公開用 | `oshime-production` |
-| `develop` | チーム内でのコード統合、リリース前テスト | `oshime-staging` |
-| `feature/*` | 通常の機能開発、改善、緊急ではないバグ修正 | ローカルDB |
-| `hotfix/*` | 本番で見つかった緊急度の高い不具合対応 | 原則、本番に近い状態で確認 |
-
----
+| ブランチ        | 用途                    | 接続先DB               |
+| ----------- | --------------------- | ------------------- |
+| `main`      | 本番公開用                 | `oshime-production` |
+| `develop`   | チーム内でのコード統合、リリース前テスト  | `oshime-staging`    |
+| `feature/*` | 通常の機能開発、改善、緊急ではないバグ修正 | ローカルDB              |
+| `hotfix/*`  | 本番で見つかった緊急度の高い不具合対応   | 原則、本番に近い状態で確認       |
 
 ## ブランチ戦略
 
 ### `main`
 
-- 本番公開用ブランチ
-- `develop` で検証済みのものだけをPRでマージする
-- 直接コミット、直接pushはしない
-- ただし、`git pull` で最新化するのはOK
-- 緊急修正時のみ `hotfix/*` からPRでマージされる
+* 本番公開用ブランチ
+* `develop` で検証済みのものだけをPRでマージする
+* 直接コミット、直接pushはしない
+* ただし、`git pull` で最新化するのはOK
+* 緊急修正時のみ `hotfix/*` からPRでマージされる
 
 ### `develop`
 
-- 通常開発の基準となるブランチ
-- `feature/*` は基本的に `develop` から作成する
-- チーム内でコードを統合し、ステージングで確認するためのブランチ
+* 通常開発の基準となるブランチ
+* `feature/*` は基本的に `develop` から作成する
+* チーム内でコードを統合し、ステージングで確認するためのブランチ
 
 ### `feature/*`
 
-- 通常の機能開発用ブランチ
-- `develop` から作成する
-- 開発完了後は `develop` にPRを出してマージする
-- マージ後は削除する
+* 通常の機能開発用ブランチ
+* `develop` から作成する
+* 開発完了後は `develop` にPRを出してマージする
+* マージ後は削除する
 
 命名例:
 
-- `feature/login`
-- `feature/artist-register`
+* `feature/login`
+* `feature/artist-register`
 
 ### `hotfix/*`
 
-- 緊急バグ修正用ブランチ
-- `main` から作成する
-- 修正後は `main` にPRを出してマージする
-- `main` に入れた修正は、取り込み漏れ防止のため `develop` にも反映する
-- マージ後は削除する
+* 緊急バグ修正用ブランチ
+* `main` から作成する
+* 修正後は `main` にPRを出してマージする
+* `main` に入れた修正は、取り込み漏れ防止のため `develop` にも反映する
+* マージ後は削除する
 
 命名例:
 
-- `hotfix/payment-error`
-- `hotfix/login-bug`
-
----
+* `hotfix/payment-error`
+* `hotfix/login-bug`
 
 ## 2人開発の基本ルール
 
-- 作業を始める前に、タスク管理表にやることを書く
-- 通常開発は `develop` を基準に進める
-- 緊急修正だけ `main` を基準に進める
-- `main` や `develop` で直接作業しない
-- 実際の作業は必ず `feature/*` または `hotfix/*` で行う
-- マージ後は不要になった作業ブランチを削除する
-- 通常運用では `develop` → `main` の一方向でリリースする
-- `main` → `develop` の反映は、`hotfix/*` を `main` に入れたときだけ行う
-- `main` と `develop` を毎回双方向にマージして揃えようとしない
-
----
+* 作業を始める前に、タスク管理表にやることを書く
+* 通常開発は `develop` を基準に進める
+* 緊急修正だけ `main` を基準に進める
+* `main` や `develop` で直接作業しない
+* 実際の作業は必ず `feature/*` または `hotfix/*` で行う
+* マージ後は不要になった作業ブランチを削除する
+* 通常運用では `develop → main` の一方向でリリースする
+* `main → develop` の反映は、`hotfix/*` を `main` に入れたときだけ行う
+* `main` と `develop` を毎回双方向にマージして揃えようとしない
 
 ## 作業開始時の流れ
 
@@ -221,8 +364,6 @@ git pull
 git switch -c hotfix/login-bug
 ```
 
----
-
 ## `git pull` の考え方
 
 `git pull` は、今チェックアウトしているブランチに対して実行される。
@@ -241,10 +382,10 @@ git switch main
 git pull
 ```
 
-`main` を `pull` すること自体は問題ない。  
+`main` を pull すること自体は問題ない。
 ダメなのは、`main` で直接作業してそのまま commit / push すること。
 
-### 例3: 自分の作業ブランチを `pull` する場合
+### 例3: 自分の作業ブランチを pull する場合
 
 すでに `origin/feature/login` が存在していて、そのブランチを自分でも使っているなら、`feature/login` 上で `git pull` してよい。
 
@@ -255,7 +396,7 @@ git pull
 
 ### 例4: ローカル専用ブランチの場合
 
-まだリモートに存在しない作業ブランチでは、`git pull` しても引く先がない。  
+まだリモートに存在しない作業ブランチでは、`git pull` しても引く先がない。
 その場合は、`develop` を最新化してから自分のブランチへ取り込む。
 
 ```bash
@@ -264,8 +405,6 @@ git pull
 git switch feature/login
 git merge develop
 ```
-
----
 
 ## ローカルで動作確認する手順
 
@@ -286,8 +425,6 @@ npm run dev
 ### 4. ブラウザで確認する
 
 表示されたURL（例: `http://localhost:3000`）を開き、ローカルの変更が反映されているか確認する。
-
----
 
 ## pushの手順
 
@@ -343,8 +480,6 @@ git push origin feature/login
 
 原則として、`develop` や `main` には直接pushしない。
 
----
-
 ## PRでのマージルール
 
 ### 通常リリース
@@ -371,58 +506,66 @@ git push origin feature/login
 
 ### マージ時の補足
 
-- 通常運用では、`develop` を `main` にリリースする流れを基本にする
-- 毎回 `main` を `develop` に戻して同期しようとすると、マージコミットが増えて履歴が複雑になりやすい
-- そのため、`main` → `develop` の反映は hotfix のときだけにする
-- 通常リリースのたびに `main` と `develop` を完全一致させる必要はない
-
----
+* 通常運用では、`develop` を `main` にリリースする流れを基本にする
+* 毎回 `main` を `develop` に戻して同期しようとすると、マージコミットが増えて履歴が複雑になりやすい
+* そのため、`main → develop` の反映は hotfix のときだけにする
+* 通常リリースのたびに `main` と `develop` を完全一致させる必要はない
 
 ## ahead / behind の見方
 
 GitHubでは、あるブランチが比較対象のブランチに対して何コミット進んでいるか、何コミット遅れているかが表示されることがある。
 
-- `ahead` = そのブランチにしかないコミットがある
-- `behind` = 比較対象のブランチにあるコミットが、そのブランチにはまだない
+* **ahead** = そのブランチにしかないコミットがある
+* **behind** = 比較対象のブランチにあるコミットが、そのブランチにはまだない
 
 ### `develop` が `main` より ahead の場合
 
 例: `develop is 3 commits ahead of main`
 
-- 意味: `develop` に本番未反映の変更がある
-- 基本的には正常
-- まだ本番に出したくないなら、そのままでよい
-- 本番に出してよい状態なら `develop` → `main` のPRを出す
+意味:
+
+* `develop` に本番未反映の変更がある
+* 基本的には正常
+* まだ本番に出したくないなら、そのままでよい
+* 本番に出してよい状態なら `develop → main` のPRを出す
 
 ### `develop` が `main` より behind の場合
 
 例: `develop is 1 commit behind main`
 
-- 意味: `main` に入っている変更が `develop` にまだ入っていない
-- 特に hotfix 後に起こりやすい
-- この場合は確認した方がよい
-- hotfix を `main` に入れたあとであれば、`main` の修正を `develop` に反映する
+意味:
+
+* `main` に入っている変更が `develop` にまだ入っていない
+* 特に hotfix 後に起こりやすい
+* この場合は確認した方がよい
+* hotfix を `main` に入れたあとであれば、`main` の修正を `develop` に反映する
 
 ### `main` が `develop` より behind の場合
 
 例: `main is 5 commits behind develop`
 
-- 意味: `develop` にある変更が、まだ `main` に入っていない
-- 通常は問題ない
-- まだリリース前ならそのままでよい
-- 本番に出すタイミングで `develop` → `main` を行う
+意味:
+
+* `develop` にある変更が、まだ `main` に入っていない
+* 通常は問題ない
+* まだリリース前ならそのままでよい
+* 本番に出すタイミングで `develop → main` を行う
 
 ### `feature/*` が `develop` より ahead の場合
 
-- 意味: 作業ブランチ上で開発が進んでいる
-- 正常
-- 作業完了後に `feature/*` → `develop` のPRを出す
+意味:
+
+* 作業ブランチ上で開発が進んでいる
+* 正常
+* 作業完了後に `feature/* → develop` のPRを出す
 
 ### `feature/*` が `develop` より behind の場合
 
-- 意味: `develop` に新しい変更が入ったが、自分の作業ブランチへまだ取り込んでいない
-- 放置しすぎるとコンフリクトの原因になる
-- 作業再開時やPR前に、`develop` を取り込むとよい
+意味:
+
+* `develop` に新しい変更が入ったが、自分の作業ブランチへまだ取り込んでいない
+* 放置しすぎるとコンフリクトの原因になる
+* 作業再開時やPR前に、`develop` を取り込むとよい
 
 ```bash
 git switch develop
@@ -433,45 +576,49 @@ git merge develop
 
 ### `hotfix/*` が `main` より ahead の場合
 
-- 意味: 緊急修正ブランチで作業している状態
-- 正常
-- 修正完了後に `hotfix/*` → `main` のPRを出す
+意味:
+
+* 緊急修正ブランチで作業している状態
+* 正常
+* 修正完了後に `hotfix/* → main` のPRを出す
 
 ### `main` と `develop` の両方で ahead / behind が出る場合
 
 例: `develop is 1 commit ahead, 1 commit behind main`
 
-- 意味: `main` と `develop` がそれぞれ相手にないコミットを持っている
-- 双方向のマージを繰り返したときに起こりやすい
-- 実ファイル差分が少なくても、マージコミットの差で表示されることがある
-- 毎回この状態になる場合は、運用を見直した方がよい
+意味:
+
+* `main` と `develop` がそれぞれ相手にないコミットを持っている
+* 双方向のマージを繰り返したときに起こりやすい
+* 実ファイル差分が少なくても、マージコミットの差で表示されることがある
+* 毎回この状態になる場合は、運用を見直した方がよい
+
+通常運用では `develop → main` を基本にし、`main → develop` は hotfix のときだけにする。
 
 ### どの表示に対応するべきか
 
 #### 基本的に問題ないことが多い表示
 
-- `develop` が `main` より ahead
-- `feature/*` が `develop` より ahead
-- `hotfix/*` が `main` より ahead
+* `develop` が `main` より ahead
+* `feature/*` が `develop` より ahead
+* `hotfix/*` が `main` より ahead
 
 これらは「未リリース」または「作業中」を意味することが多い。
 
 #### 確認した方がよい表示
 
-- `develop` が `main` より behind
-- `feature/*` が `develop` より behind
+* `develop` が `main` より behind
+* `feature/*` が `develop` より behind
 
 これらは「取り込むべき変更がまだ入っていない」可能性がある。
 
 #### 運用を見直した方がよい表示
 
-- `main` と `develop` の両方で ahead / behind が出る
-- `develop` を `main` にマージしても、またすぐ逆方向の差分表示が出る
+* `main` と `develop` の両方で ahead / behind が出る
+* `develop` を `main` にマージしても、またすぐ逆方向の差分表示が出る
 
-この場合は、`main` と `develop` を双方向に毎回マージしている可能性がある。  
-通常運用では `develop` → `main` を基本にし、`main` → `develop` は hotfix のときだけにする。
-
----
+この場合は、`main` と `develop` を双方向に毎回マージしている可能性がある。
+通常運用では `develop → main` を基本にし、`main → develop` は hotfix のときだけにする。
 
 ## ブランチの削除方法
 
@@ -505,8 +652,6 @@ git push origin --delete ブランチ名
 git switch develop
 ```
 
----
-
 ## よくある開発フローの例
 
 ### 例1: 新しくログイン機能を作る場合
@@ -525,7 +670,7 @@ git commit -m "ログイン機能を追加"
 git push origin feature/login
 ```
 
-その後、`feature/login` → `develop` にPRを出す。
+その後、`feature/login → develop` にPRを出す。
 
 ### 例2: 既存の作業ブランチを再開する場合
 
@@ -544,18 +689,16 @@ git pull
 git switch -c hotfix/login-bug
 ```
 
-作業後、`hotfix/login-bug` → `main` にPRを出す。  
+作業後、`hotfix/login-bug → main` にPRを出す。
 その後、`main` に入った修正を `develop` にも反映する。
-
----
 
 ## 補足
 
-- `main` は pullしてよい
-- `develop` も pullしてよい
-- ダメなのは、`main` や `develop` を作業ブランチ代わりに使うこと
-- 普段の開発は `develop` から `feature/*` を切る
-- 緊急修正だけ `main` から `hotfix/*` を切る
-- 通常運用では `develop` → `main` を基本にする
-- `main` → `develop` は hotfix のときだけにする
-- `main` と `develop` を毎回双方向にマージして完全同期しようとしない
+* `main` は pullしてよい
+* `develop` も pullしてよい
+* ダメなのは、`main` や `develop` を作業ブランチ代わりに使うこと
+* 普段の開発は `develop` から `feature/*` を切る
+* 緊急修正だけ `main` から `hotfix/*` を切る
+* 通常運用では `develop → main` を基本にする
+* `main → develop` は hotfix のときだけにする
+* `main` と `develop` を毎回双方向にマージして完全同期しようとしない
