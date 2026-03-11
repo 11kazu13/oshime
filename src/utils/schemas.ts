@@ -21,6 +21,7 @@ export const createArtistSchema = z.object({
   birthplace: z.string().nullish(),
   mbti: z.string().nullish(),
   xAccount: z.string().nullish(),
+  tags: z.array(z.string()).optional(),
 })
 
 export const updateArtistSchema = createArtistSchema.partial()
